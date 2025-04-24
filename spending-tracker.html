@@ -60,8 +60,12 @@
             --modal-text: #212529;
             --chart-text: #212529;
             --chart-bg: rgba(0, 0, 0, 0.1);
+            --accent-bg: #e9ecef;
             --button-hover-bg: #0056b3;
-            --button-active-bg: #004085;
+            --button-success-bg: #28a745;
+            --button-success-hover-bg: #218838;
+            --button-info-bg: #17a2b8;
+            --button-info-hover-bg: #138496;
         }
         [data-theme="dark"] {
             --background-color: #212529;
@@ -78,8 +82,12 @@
             --modal-text: #f8f9fa;
             --chart-text: #f8f9fa;
             --chart-bg: rgba(255, 255, 255, 0.1);
+            --accent-bg: #495057;
             --button-hover-bg: #1a73e8;
-            --button-active-bg: #1557b0;
+            --button-success-bg: #28a745;
+            --button-success-hover-bg: #2ecc71;
+            --button-info-bg: #17a2b8;
+            --button-info-hover-bg: #1ccad8;
         }
         body {
             background-color: var(--background-color);
@@ -103,15 +111,22 @@
         .btn-primary, .btn-info, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
             background-color: var(--button-bg);
             color: var(--button-text);
-            transition: background-color 0.3s ease, transform 0.1s ease;
+            transition: background-color 0.3s ease;
         }
-        .btn-primary:hover, .btn-info:hover, .btn-success:hover, .btn-danger:hover, .btn-warning:hover, .btn-secondary:hover {
+        .btn-primary:hover {
             background-color: var(--button-hover-bg);
-            transform: scale(1.05);
         }
-        .btn-primary:active, .btn-info:active, .btn-success:active, .btn-danger:active, .btn-warning:active, .btn-secondary:active {
-            background-color: var(--button-active-bg);
-            transform: scale(0.95);
+        .btn-success {
+            background-color: var(--button-success-bg);
+        }
+        .btn-success:hover {
+            background-color: var(--button-success-hover-bg);
+        }
+        .btn-info {
+            background-color: var(--button-info-bg);
+        }
+        .btn-info:hover {
+            background-color: var(--button-info-hover-bg);
         }
         .spending-entries-table {
             max-height: 300px;
@@ -138,52 +153,31 @@
             max-width: 100%;
             margin-bottom: 20px;
         }
-        /* Custom button group styling for mobile responsiveness */
-        .btn-group-custom {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
+        .action-buttons {
+            background-color: var(--accent-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
         }
-        .btn-group-custom .btn {
-            flex: 1 1 100%;
-            max-width: 200px;
-            white-space: nowrap;
-            padding: 10px 15px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 25px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        .action-buttons .btn {
+            margin: 5px;
+            width: 100%;
+            font-weight: 500;
+            border-radius: 8px;
         }
-        @media (min-width: 576px) {
-            .btn-group-custom .btn {
-                flex: 1 1 auto;
-                max-width: none;
+        @media (min-width: 768px) {
+            .action-buttons .btn {
+                width: auto;
             }
         }
-        .btn-group-custom .btn i {
-            margin-right: 8px;
-        }
-        .btn-add-income { background-color: #28a745; }
-        .btn-add-income:hover { background-color: #218838; }
-        .btn-add-expense { background-color: #dc3545; }
-        .btn-add-expense:hover { background-color: #c82333; }
-        .btn-summary { background-color: #17a2b8; }
-        .btn-summary:hover { background-color: #138496; }
-        .btn-export-excel { background-color: #007bff; }
-        .btn-export-excel:hover { background-color: #0056b3; }
-        .btn-export-pdf { background-color: #6f42c1; }
-        .btn-export-pdf:hover { background-color: #5a32a3; }
     </style>
 </head>
 <body class="container py-5">
     <h2 class="text-center mb-4" data-translate="spendingTracker">Spending Tracker</h2>
 
-    <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap">
-        <button class="btn btn-primary mb-2" id="spendingTrackerBtn" data-translate="addEntry">Add Spending Entry</button>
-        <div class="mb-2">
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <button class="btn btn-primary" id="spendingTrackerBtn" data-translate="addEntry">Add Spending Entry</button>
+        <div>
             <select id="languageToggle" class="form-select d-inline-block" style="width: auto;">
                 <option value="en" data-translate="english">English</option>
                 <option value="ne" data-translate="nepali">Nepali</option>
@@ -191,23 +185,26 @@
         </div>
     </div>
 
-    <!-- New Button Group Under Add Spending Entry -->
-    <div class="btn-group-custom mb-4">
-        <button class="btn btn-add-income" id="addIncomeBtn">
-            <i class="bi bi-plus-circle"></i> <span data-translate="income">Income</span>
-        </button>
-        <button class="btn btn-add-expense" id="addExpenseBtn">
-            <i class="bi bi-dash-circle"></i> <span data-translate="expense">Expense</span>
-        </button>
-        <button class="btn btn-summary" id="summaryReportBtn">
-            <i class="bi bi-bar-chart-line"></i> <span data-translate="viewSummary">Summary Report</span>
-        </button>
-        <button class="btn btn-export-excel" id="exportExcelBtn">
-            <i class="bi bi-file-earmark-excel"></i> <span data-translate="exportExcel">Export to Excel</span>
-        </button>
-        <button class="btn btn-export-pdf" id="exportPDFBtn">
-            <i class="bi bi-file-earmark-pdf"></i> <span data-translate="exportPDF">Export to PDF</span>
-        </button>
+    <!-- New Add Spending Entry Section -->
+    <div class="action-buttons">
+        <h4 class="mb-3" data-translate="addSpendingEntryHeader">Add Spending Entry</h4>
+        <div class="row g-2">
+            <div class="col-12 col-md-4 col-lg-2">
+                <button class="btn btn-success" id="addIncomeBtn" data-translate="addIncome">Add Income</button>
+            </div>
+            <div class="col-12 col-md-4 col-lg-2">
+                <button class="btn btn-danger" id="addExpenseBtn" data-translate="addExpense">Add Expense</button>
+            </div>
+            <div class="col-12 col-md-4 col-lg-2">
+                <button class="btn btn-info" id="summaryReportBtn" data-translate="summaryReport">Summary Report</button>
+            </div>
+            <div class="col-12 col-md-6 col-lg-2">
+                <button class="btn btn-primary" id="exportExcelBtn" data-translate="exportExcel">Export to Excel</button>
+            </div>
+            <div class="col-12 col-md-6 col-lg-2">
+                <button class="btn btn-primary" id="exportPDFBtn" data-translate="exportPDF">Export to PDF</button>
+            </div>
+        </div>
     </div>
 
     <!-- Spending Tracker Modal -->
@@ -521,8 +518,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Include Bootstrap Icons for button icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <script src="utils.js"></script>
     <script>
 (function () {
@@ -602,6 +597,11 @@
      */
     function initializeEventListeners() {
         document.getElementById("spendingTrackerBtn").addEventListener("click", openSpendingTrackerModal);
+        document.getElementById("addIncomeBtn").addEventListener("click", () => openSpendingTrackerModal("Income"));
+        document.getElementById("addExpenseBtn").addEventListener("click", () => openSpendingTrackerModal("Expense"));
+        document.getElementById("summaryReportBtn").addEventListener("click", showSpendingSummary);
+        document.getElementById("exportExcelBtn").addEventListener("click", exportSpendingToExcel);
+        document.getElementById("exportPDFBtn").addEventListener("click", exportSpendingToPDF);
         document.getElementById("addSpendingBtn").addEventListener("click", addSpendingEntry);
         document.getElementById("viewSummaryBtn").addEventListener("click", showSpendingSummary);
         document.getElementById("manageEntriesBtn").addEventListener("click", showManageEntries);
@@ -627,13 +627,6 @@
         document.getElementById("filterCategory").addEventListener("change", showManageEntries);
         document.getElementById("filterStartDate").addEventListener("change", showManageEntries);
         document.getElementById("filterEndDate").addEventListener("change", showManageEntries);
-
-        // New button event listeners
-        document.getElementById("addIncomeBtn").addEventListener("click", () => openSpendingTrackerModal("Income"));
-        document.getElementById("addExpenseBtn").addEventListener("click", () => openSpendingTrackerModal("Expense"));
-        document.getElementById("summaryReportBtn").addEventListener("click", showSpendingSummary);
-        document.getElementById("exportExcelBtn").addEventListener("click", exportSpendingToExcel);
-        document.getElementById("exportPDFBtn").addEventListener("click", exportSpendingToPDF);
 
         // Keyboard navigation for buttons
         document.querySelectorAll(".btn").forEach(btn => {
@@ -815,7 +808,7 @@
         ];
         dropdowns.forEach(dropdown => {
             const selectedValue = dropdown.value;
-            dropdown.innerHTML = '<option value="all" data-translate="all">All</option>';
+            dropdown.innerHTML = dropdown.id === "filterCategory" ? '<option value="all" data-translate="all">All</option>' : '';
             state.categories.forEach(category => {
                 const option = document.createElement("option");
                 option.value = category;
@@ -1199,7 +1192,7 @@
      * Shows the spending summary modal with weekly, monthly, yearly summaries, budgets, and charts.
      */
     function showSpendingSummary() {
-        bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal")).hide();
+        bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal"))?.hide();
         const now = new Date();
         const defaultCurrency = localStorage.getItem("defaultCurrency") || "NRs";
 
@@ -1369,7 +1362,7 @@
                     {
                         label: getTranslation("expenses"),
                         data: expenses,
-                        borderColor: isDarkMode ? "#dc3545" : "#dc3545",
+borderColor: isDarkMode ? "#dc3545" : "#dc3545",
                         backgroundColor: isDarkMode ? "rgba(220, 53, 69, 0.2)" : "rgba(220, 53, 69, 0.2)",
                         fill: true
                     }
@@ -1394,7 +1387,7 @@
                     x: {
                         title: {
                             display: true,
-                            text: "Month",
+                            text: 'Months',
                             color: isDarkMode ? "#f8f9fa" : "#212529"
                         },
                         ticks: {
@@ -1424,6 +1417,11 @@
         applyTranslations();
         new bootstrap.Modal(document.getElementById("spendingSummaryModal")).show();
     }
+
+    // Expose functions to global scope for inline event handlers
+    window.editSpendingEntry = editSpendingEntry;
+    window.deleteSpendingEntry = deleteSpendingEntry;
+    window.stopRecurrence = stopRecurrence;
 })();
     </script>
 </body>

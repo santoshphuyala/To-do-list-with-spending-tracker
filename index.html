@@ -44,6 +44,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Todo List and Spending Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
             --background-color: #f8f9fa;
@@ -52,8 +53,8 @@
             --border-color: #dee2e6;
             --button-bg: #0d6efd;
             --button-text: #ffffff;
-            --modal-bg: #ffffff;
-            --modal-text: #212529;
+            --button-hover-bg: #0056b3;
+            --button-active-bg: #004085;
         }
         [data-theme="dark"] {
             --background-color: #212529;
@@ -62,73 +63,160 @@
             --border-color: #495057;
             --button-bg: #0d6efd;
             --button-text: #ffffff;
-            --modal-bg: #343a40;
-            --modal-text: #f8f9fa;
+            --button-hover-bg: #1a73e8;
+            --button-active-bg: #1557b0;
         }
         body {
             background-color: var(--background-color);
             color: var(--text-color);
             transition: all 0.3s ease;
+            font-family: 'Arial', sans-serif;
         }
-        .container, .list-group-item, .modal-content {
+        .container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .nav-tabs {
+            border-bottom: 2px solid var(--border-color);
+        }
+        .nav-link {
+            color: var(--text-color);
+            border-radius: 10px 10px 0 0;
+            transition: background-color 0.3s ease;
+        }
+        .nav-link.active {
             background-color: var(--card-bg);
             color: var(--text-color);
             border-color: var(--border-color);
+            border-bottom: none;
         }
-        .modal-content {
-            background-color: var(--modal-bg);
-            color: var(--modal-text);
+        .nav-link:hover {
+            background-color: var(--border-color);
         }
-        .btn-primary, .btn-info, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+        .btn-primary {
             background-color: var(--button-bg);
             color: var(--button-text);
+            border-radius: 25px;
+            padding: 8px 20px;
+            transition: background-color 0.3s ease, transform 0.1s ease;
         }
-        .theme-toggle-btn {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
+        .btn-primary:hover {
+            background-color: var(--button-hover-bg);
+            transform: scale(1.05);
+        }
+        .btn-primary:active {
+            background-color: var(--button-active-bg);
+            transform: scale(0.95);
         }
         iframe {
             width: 100%;
-            height: 90vh;
+            height: 600px;
             border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .language-toggle {
+            width: auto;
+            border-radius: 10px;
+        }
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
         }
     </style>
 </head>
-<body class="container py-5">
-    <!-- Theme Toggle Button -->
-    <button class="btn btn-secondary theme-toggle-btn" id="themeToggleBtn">Toggle Dark Mode</button>
-
-    <h2 class="text-center mb-4">Todo List and Spending Tracker</h2>
-
-    <!-- Tabs for Navigation -->
-    <ul class="nav nav-tabs mb-4" id="appTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="todo-tab" data-bs-toggle="tab" data-bs-target="#todo-pane" type="button" role="tab" aria-controls="todo-pane" aria-selected="true">Todo List</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="spending-tab" data-bs-toggle="tab" data-bs-target="#spending-pane" type="button" role="tab" aria-controls="spending-pane" aria-selected="false">Spending Tracker</button>
-        </li>
-    </ul>
-
-    <!-- Tab Content -->
-    <div class="tab-content" id="appTabContent">
-        <div class="tab-pane fade show active" id="todo-pane" role="tabpanel" aria-labelledby="todo-tab">
-            <iframe id="todoIframe" src="todo-list.html"></iframe>
+<body class="py-5">
+    <div class="container">
+        <h1 class="text-center mb-4">Todo List and Spending Tracker</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <button class="btn btn-primary mb-2" id="toggleThemeBtn">Toggle Dark Mode</button>
+            <select id="languageToggle" class="form-select language-toggle mb-2">
+                <option value="en">English</option>
+                <option value="ne">Nepali</option>
+            </select>
         </div>
-        <div class="tab-pane fade" id="spending-pane" role="tabpanel" aria-labelledby="spending-tab">
-            <iframe id="spendingIframe" src="spending-tracker.html"></iframe>
+        <ul class="nav nav-tabs" id="appTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="todo-tab" data-bs-toggle="tab" data-bs-target="#todo" type="button" role="tab" aria-controls="todo" aria-selected="true">Todo List</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="spending-tab" data-bs-toggle="tab" data-bs-target="#spending" type="button" role="tab" aria-controls="spending" aria-selected="false">Spending Tracker</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="appTabContent">
+            <div class="tab-pane fade show active" id="todo" role="tabpanel" aria-labelledby="todo-tab">
+                <iframe src="todo-list.html" id="todoIframe" title="Todo List"></iframe>
+            </div>
+            <div class="tab-pane fade" id="spending" role="tabpanel" aria-labelledby="spending-tab">
+                <iframe src="spending-tracker.html" id="spendingIframe" title="Spending Tracker"></iframe>
+            </div>
         </div>
+        <footer>
+            Software concept and designed by Santosh Phuyal
+        </footer>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="utils.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            applyTheme();
-            document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
-        });
+        (function () {
+            const todoIframe = document.getElementById('todoIframe');
+            const spendingIframe = document.getElementById('spendingIframe');
+            const toggleThemeBtn = document.getElementById('toggleThemeBtn');
+            const languageToggle = document.getElementById('languageToggle');
+
+            function initializeApp() {
+                // Load saved theme
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                toggleThemeBtn.textContent = savedTheme === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+
+                // Load saved language
+                const savedLanguage = localStorage.getItem('selectedLanguage') || 'en';
+                languageToggle.value = savedLanguage;
+
+                // Propagate initial theme and language to iframes
+                propagateTheme(savedTheme);
+                propagateLanguage(savedLanguage);
+            }
+
+            function propagateTheme(theme) {
+                todoIframe.contentWindow.postMessage({ theme: theme }, '*');
+                spendingIframe.contentWindow.postMessage({ theme: theme }, '*');
+            }
+
+            function propagateLanguage(lang) {
+                todoIframe.contentWindow.postMessage({ language: lang }, '*');
+                spendingIframe.contentWindow.postMessage({ language: lang }, '*');
+            }
+
+            toggleThemeBtn.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                toggleThemeBtn.textContent = newTheme === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+                propagateTheme(newTheme);
+            });
+
+            languageToggle.addEventListener('change', () => {
+                const lang = languageToggle.value;
+                localStorage.setItem('selectedLanguage', lang);
+                propagateLanguage(lang);
+            });
+
+            // Ensure DOM is fully loaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeApp);
+            } else {
+                initializeApp();
+            }
+        })();
     </script>
 </body>
 </html>
