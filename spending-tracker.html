@@ -1,0 +1,607 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spending Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --background-color: #f8f9fa;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --button-bg: #0d6efd;
+            --button-text: #ffffff;
+            --completed-text: gray;
+            --high-bg: #dc3545;
+            --medium-bg: #ffc107;
+            --low-bg: #28a745;
+            --modal-bg: #ffffff;
+            --modal-text: #212529;
+        }
+        [data-theme="dark"] {
+            --background-color: #212529;
+            --text-color: #f8f9fa;
+            --card-bg: #343a40;
+            --border-color: #495057;
+            --button-bg: #0d6efd;
+            --button-text: #ffffff;
+            --completed-text: #adb5bd;
+            --high-bg: #dc3545;
+            --medium-bg: #ffc107;
+            --low-bg: #28a745;
+            --modal-bg: #343a40;
+            --modal-text: #f8f9fa;
+        }
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+        .container, .list-group-item, .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        .modal-content {
+            background-color: var(--modal-bg);
+            color: var(--modal-text);
+        }
+        .completed { text-decoration: line-through; color: var(--completed-text); }
+        .high { background-color: var(--high-bg); color: white; }
+        .medium { background-color: var(--medium-bg); color: black; }
+        .low { background-color: var(--low-bg); color: white; }
+        .notes-collapse { max-height: 100px; overflow-y: auto; }
+        .btn-primary, .btn-info, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+        }
+        .spending-entries-table {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="container py-5">
+    <h2 class="text-center mb-4">Spending Tracker</h2>
+
+    <div class="mb-3">
+        <button class="btn btn-primary" id="spendingTrackerBtn">Add Spending Entry</button>
+    </div>
+
+    <!-- Spending Tracker Modal -->
+    <div class="modal fade" id="spendingTrackerModal" tabindex="-1" aria-labelledby="spendingTrackerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="spendingTrackerModalLabel">Spending Tracker</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="spendingAmount" class="form-label">Amount</label>
+                        <input type="number" id="spendingAmount" class="form-control" placeholder="Enter amount" min="0" step="0.01" aria-label="Spending amount">
+                        <div class="invalid-feedback">Please enter a valid amount.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="spendingType" class="form-label">Type</label>
+                        <select id="spendingType" class="form-select" aria-label="Spending type">
+                            <option value="Income">Income</option>
+                            <option value="Expense">Expense</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="spendingCategory" class="form-label">Category</label>
+                        <select id="spendingCategory" class="form-select" aria-label="Spending category">
+                            <option value="Food">Food</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Salary">Salary</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="spendingDate" class="form-label">Date</label>
+                        <input type="date" id="spendingDate" class="form-control" aria-label="Spending date">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="addSpendingBtn">Add Entry</button>
+                    <button type="button" class="btn btn-info" id="viewSummaryBtn">View Summary</button>
+                    <button type="button" class="btn btn-warning" id="manageEntriesBtn">Manage Entries</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spending Summary Modal -->
+    <div class="modal fade" id="spendingSummaryModal" tabindex="-1" aria-labelledby="spendingSummaryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="spendingSummaryModalLabel">Spending Summary</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Weekly Summary (Current Week, Monday to Sunday)</h6>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Day</th>
+                                <th>Income</th>
+                                <th>Expenses</th>
+                                <th>Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="weeklySummary"></tbody>
+                    </table>
+                    <h6>Monthly Summary</h6>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Total Income</th>
+                                <th>Total Expenses</th>
+                                <th>Net Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthlySummary"></tbody>
+                    </table>
+                    <h6>Yearly Summary</h6>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Total Income</th>
+                                <th>Total Expenses</th>
+                                <th>Net Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="yearlySummary"></tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info" id="exportSpendingExcelBtn">Export to Excel</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Spending Entries Modal -->
+    <div class="modal fade" id="manageEntriesModal" tabindex="-1" aria-labelledby="manageEntriesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manageEntriesModalLabel">Manage Spending Entries</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="spending-entries-table">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="spendingEntriesList"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Spending Entry Modal -->
+    <div class="modal fade" id="editSpendingModal" tabindex="-1" aria-labelledby="editSpendingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editSpendingModalLabel">Edit Spending Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editSpendingAmount" class="form-label">Amount</label>
+                        <input type="number" id="editSpendingAmount" class="form-control" placeholder="Enter amount" min="0" step="0.01" aria-label="Edit spending amount">
+                        <div class="invalid-feedback">Please enter a valid amount.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSpendingType" class="form-label">Type</label>
+                        <select id="editSpendingType" class="form-select" aria-label="Edit spending type">
+                            <option value="Income">Income</option>
+                            <option value="Expense">Expense</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSpendingCategory" class="form-label">Category</label>
+                        <select id="editSpendingCategory" class="form-select" aria-label="Edit spending category">
+                            <option value="Food">Food</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Salary">Salary</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSpendingDate" class="form-label">Date</label>
+                        <input type="date" id="editSpendingDate" class="form-control" aria-label="Edit spending date">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveEditSpendingBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="utils.js"></script>
+    <script>
+(function () {
+    // State management
+    const state = {
+        spendingEntries: [] // Array to store spending entries
+    };
+
+    let currentEditSpendingIndex = null;
+
+    // Listen for theme changes from parent
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.theme) {
+            document.documentElement.setAttribute('data-theme', event.data.theme);
+        }
+    });
+
+    // Initialize
+    document.addEventListener("DOMContentLoaded", () => {
+        try {
+            const storedSpending = localStorage.getItem("spendingEntries");
+            if (storedSpending) {
+                state.spendingEntries = parseMinifiedJSON(storedSpending);
+            }
+        } catch (e) {
+            console.error("Failed to load spending entries:", e);
+            alert("Unable to load spending entries. Please check your browser settings.");
+        }
+        document.getElementById("spendingDate").value = new Date().toISOString().split("T")[0];
+        applyTheme();
+        initializeEventListeners();
+    });
+
+    /**
+     * Initializes all event listeners for buttons.
+     */
+    function initializeEventListeners() {
+        document.getElementById("spendingTrackerBtn").addEventListener("click", openSpendingTrackerModal);
+        document.getElementById("addSpendingBtn").addEventListener("click", addSpendingEntry);
+        document.getElementById("viewSummaryBtn").addEventListener("click", showSpendingSummary);
+        document.getElementById("manageEntriesBtn").addEventListener("click", showManageEntries);
+        document.getElementById("exportSpendingExcelBtn").addEventListener("click", exportSpendingToExcel);
+        document.getElementById("saveEditSpendingBtn").addEventListener("click", saveEditedSpendingEntry);
+
+        // Keyboard navigation for buttons
+        document.querySelectorAll(".btn").forEach(btn => {
+            btn.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    btn.click();
+                    e.preventDefault();
+                }
+            });
+        });
+    }
+
+    /**
+     * Saves spending entries to localStorage.
+     */
+    function saveSpendingEntries() {
+        try {
+            checkStorageCapacity();
+            localStorage.setItem("spendingEntries", minifyJSON(state.spendingEntries));
+        } catch (e) {
+            console.error("Failed to save spending entries:", e);
+            alert("Unable to save spending entries. Please check your browser settings.");
+            throw e;
+        }
+    }
+
+    /**
+     * Opens the spending tracker modal.
+     */
+    function openSpendingTrackerModal() {
+        document.getElementById("spendingAmount").value = "";
+        document.getElementById("spendingAmount").classList.remove("is-invalid");
+        document.getElementById("spendingType").value = "Income";
+        document.getElementById("spendingCategory").value = "Food";
+        document.getElementById("spendingDate").value = new Date().toISOString().split("T")[0];
+        new bootstrap.Modal(document.getElementById("spendingTrackerModal")).show();
+    }
+
+    /**
+     * Adds a new spending entry.
+     */
+    function addSpendingEntry() {
+        const amountInput = document.getElementById("spendingAmount");
+        const amount = parseFloat(amountInput.value);
+        const type = document.getElementById("spendingType").value;
+        const category = document.getElementById("spendingCategory").value;
+        const date = document.getElementById("spendingDate").value;
+
+        if (isNaN(amount) || amount <= 0) {
+            amountInput.classList.add("is-invalid");
+            return;
+        }
+        amountInput.classList.remove("is-invalid");
+
+        try {
+            state.spendingEntries.push({
+                amount,
+                type,
+                category,
+                date
+            });
+            saveSpendingEntries();
+            bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal")).hide();
+            alert("Spending entry added successfully!");
+        } catch (e) {
+            console.error("Failed to add spending entry:", e);
+            alert("Failed to add spending entry. Please try again.");
+        }
+    }
+
+    /**
+     * Shows the manage entries modal with a list of all spending entries.
+     */
+    function showManageEntries() {
+        bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal")).hide();
+        const entriesList = document.getElementById("spendingEntriesList");
+        entriesList.innerHTML = "";
+
+        if (state.spendingEntries.length === 0) {
+            entriesList.innerHTML = "<tr><td colspan='5'>No spending entries found.</td></tr>";
+        } else {
+            state.spendingEntries.forEach((entry, index) => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${entry.date}</td>
+                    <td>${entry.type}</td>
+                    <td>${entry.category}</td>
+                    <td>$${entry.amount.toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm me-2" onclick="editSpendingEntry(${index})">Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteSpendingEntry(${index})">Delete</button>
+                    </td>
+                `;
+                entriesList.appendChild(row);
+            });
+        }
+
+        new bootstrap.Modal(document.getElementById("manageEntriesModal")).show();
+    }
+
+    /**
+     * Opens the edit spending entry modal.
+     * @param {number} index - Index of the spending entry.
+     */
+    window.editSpendingEntry = function(index) {
+        currentEditSpendingIndex = index;
+        const entry = state.spendingEntries[index];
+        document.getElementById("editSpendingAmount").value = entry.amount;
+        document.getElementById("editSpendingAmount").classList.remove("is-invalid");
+        document.getElementById("editSpendingType").value = entry.type;
+        document.getElementById("editSpendingCategory").value = entry.category;
+        document.getElementById("editSpendingDate").value = entry.date;
+        new bootstrap.Modal(document.getElementById("editSpendingModal")).show();
+    };
+
+    /**
+     * Saves the edited spending entry.
+     */
+    function saveEditedSpendingEntry() {
+        const amountInput = document.getElementById("editSpendingAmount");
+        const amount = parseFloat(amountInput.value);
+        const type = document.getElementById("editSpendingType").value;
+        const category = document.getElementById("editSpendingCategory").value;
+        const date = document.getElementById("editSpendingDate").value;
+
+        if (isNaN(amount) || amount <= 0) {
+            amountInput.classList.add("is-invalid");
+            return;
+        }
+        amountInput.classList.remove("is-invalid");
+
+        try {
+            state.spendingEntries[currentEditSpendingIndex] = {
+                amount,
+                type,
+                category,
+                date
+            };
+            saveSpendingEntries();
+            bootstrap.Modal.getInstance(document.getElementById("editSpendingModal")).hide();
+            showManageEntries();
+            alert("Spending entry updated successfully!");
+        } catch (e) {
+            console.error("Failed to update spending entry:", e);
+            alert("Failed to update spending entry. Please try again.");
+        }
+    }
+
+    /**
+     * Deletes a spending entry.
+     * @param {number} index - Index of the spending entry.
+     */
+    window.deleteSpendingEntry = function(index) {
+        if (confirm("Are you sure you want to delete this spending entry?")) {
+            try {
+                state.spendingEntries.splice(index, 1);
+                saveSpendingEntries();
+                showManageEntries();
+                alert("Spending entry deleted successfully!");
+            } catch (e) {
+                console.error("Failed to delete spending entry:", e);
+                alert("Failed to delete spending entry. Please try again.");
+            }
+        }
+    };
+
+    /**
+     * Exports spending entries to an Excel file.
+     */
+    function exportSpendingToExcel() {
+        if (state.spendingEntries.length === 0) {
+            alert("No spending entries to export.");
+            return;
+        }
+        try {
+            const worksheet = XLSX.utils.json_to_sheet(state.spendingEntries.map(entry => ({
+                Date: entry.date,
+                Type: entry.type,
+                Category: entry.category,
+                Amount: entry.amount
+            })));
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Spending Entries");
+            XLSX.writeFile(workbook, "Spending_Entries.xlsx");
+        } catch (e) {
+            console.error("Export failed:", e);
+            alert("Failed to export spending entries. Please try again.");
+        }
+    }
+
+    /**
+     * Shows the spending summary modal with weekly, monthly, and yearly summaries.
+     */
+    function showSpendingSummary() {
+        bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal")).hide();
+        const now = new Date();
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1)); // Monday of the current week
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+
+        // Weekly Summary by Day
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6); // Sunday
+        const weeklySummaryTable = document.getElementById("weeklySummary");
+        weeklySummaryTable.innerHTML = "";
+        const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(weekStart);
+            currentDay.setDate(weekStart.getDate() + i);
+            const dayString = currentDay.toISOString().split("T")[0];
+            const dayEntries = state.spendingEntries.filter(entry => entry.date === dayString);
+            const income = dayEntries
+                .filter(entry => entry.type === "Income")
+                .reduce((sum, entry) => sum + entry.amount, 0);
+            const expenses = dayEntries
+                .filter(entry => entry.type === "Expense")
+                .reduce((sum, entry) => sum + entry.amount, 0);
+            const balance = income - expenses;
+
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${days[i]} (${dayString})</td>
+                <td>$${income.toFixed(2)}</td>
+                <td>$${expenses.toFixed(2)}</td>
+                <td>$${balance.toFixed(2)}</td>
+            `;
+            weeklySummaryTable.appendChild(row);
+        }
+
+        // Monthly Summary
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const monthlyEntries = state.spendingEntries.filter(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate >= monthStart && entryDate <= monthEnd;
+        });
+        const monthlyIncome = monthlyEntries
+            .filter(entry => entry.type === "Income")
+            .reduce((sum, entry) => sum + entry.amount, 0);
+        const monthlyExpenses = monthlyEntries
+            .filter(entry => entry.type === "Expense")
+            .reduce((sum, entry) => sum + entry.amount, 0);
+        document.getElementById("monthlySummary").innerHTML = `
+            <tr>
+                <td>$${monthlyIncome.toFixed(2)}</td>
+                <td>$${monthlyExpenses.toFixed(2)}</td>
+                <td>$${(monthlyIncome - monthlyExpenses).toFixed(2)}</td>
+            </tr>
+        `;
+
+        // Yearly Summary
+        const yearEnd = new Date(now.getFullYear(), 11, 31);
+        const yearlyEntries = state.spendingEntries.filter(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate >= yearStart && entryDate <= yearEnd;
+        });
+        const yearlyIncome = yearlyEntries
+            .filter(entry => entry.type === "Income")
+            .reduce((sum, entry) => sum + entry.amount, 0);
+        const yearlyExpenses = yearlyEntries
+            .filter(entry => entry.type === "Expense")
+            .reduce((sum, entry) => sum + entry.amount, 0);
+        document.getElementById("yearlySummary").innerHTML = `
+            <tr>
+                <td>$${yearlyIncome.toFixed(2)}</td>
+                <td>$${yearlyExpenses.toFixed(2)}</td>
+                <td>$${(yearlyIncome - yearlyExpenses).toFixed(2)}</td>
+            </tr>
+        `;
+
+        new bootstrap.Modal(document.getElementById("spendingSummaryModal")).show();
+    }
+})();
+    </script>
+</body>
+</html>
