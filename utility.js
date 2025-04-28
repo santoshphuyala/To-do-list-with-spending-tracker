@@ -1,4 +1,3 @@
-// Localization
 const translations = {
     "en": {
         // Index.html translations
@@ -279,3 +278,68 @@ const translations = {
         "deleteCategoryConfirm": "के तपाईं यो वस्तु हटाउन निश्चित हुनुहुन्छ?"
     }
 };
+
+// Translation Functions
+function getTranslation(key) {
+    const lang = document.getElementById("languageToggle") ? document.getElementById("languageToggle").value : "en";
+    return translations[lang][key] || key;
+}
+
+function applyTranslations() {
+    document.querySelectorAll("[data-translate]").forEach(elem => {
+        const key = elem.getAttribute("data-translate");
+        elem.textContent = getTranslation(key);
+    });
+    document.querySelectorAll("[data-translate-placeholder]").forEach(elem => {
+        const key = elem.getAttribute("data-translate-placeholder");
+        elem.placeholder = getTranslation(key);
+    });
+    document.querySelectorAll("select option[data-translate]").forEach(option => {
+        const key = option.getAttribute("data-translate");
+        option.textContent = getTranslation(key);
+    });
+}
+
+// Utility Functions for Storage
+function minifyJSON(data) {
+    return JSON.stringify(data);
+}
+
+function parseMinifiedJSON(jsonString) {
+    try {
+        return JSON.parse(jsonString);
+    } catch (e) {
+        console.error("Failed to parse JSON:", e);
+        return [];
+    }
+}
+
+function checkStorageCapacity() {
+    const testKey = "__test__";
+    let testString = "";
+    try {
+        // Estimate available storage by filling localStorage
+        for (let x = 0; x < 1000; x++) {
+            testString += "a";
+            localStorage.setItem(testKey, testString);
+        }
+    } catch (e) {
+        console.warn("Storage capacity warning:", e);
+        localStorage.removeItem(testKey);
+        throw new Error("LocalStorage capacity exceeded.");
+    }
+    localStorage.removeItem(testKey);
+}
+
+// Theme Management
+function applyTheme() {
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+    const newTheme = currentTheme === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+}
