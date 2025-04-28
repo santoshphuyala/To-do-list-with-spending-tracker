@@ -13,7 +13,7 @@
                 var worksheet = workbook.Sheets[firstSheetName];
 
                 // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                var jsonData = XLSX.utility.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
                 // Filter out blank rows (rows where all cells are empty, null, or undefined)
                 var filteredData = jsonData.filter(row => row.some(filledCell));
 
@@ -27,8 +27,8 @@
                 }
 
                 // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                var csv = XLSX.utility.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utility.sheet_to_csv(csv, { header: 1 });
                 return csv;
             } catch (e) {
                 console.error(e);
@@ -247,7 +247,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.5.6/purify.min.js" integrity="sha512-WqUXS3XzR/4WNa4s+DjQd6zO7Wepg3jBqzCtoblzU2IAjdK9W8D7Y2AHb0Qz3JIuGL4cXWoS5T8q3IN0A9tkLTVQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="utils.js"></script>
+    <script src="utility.js"></script>
     <script>
 (function () {
     // State management
@@ -723,12 +723,12 @@
             return;
         }
         try {
-            const worksheet = XLSX.utils.json_to_sheet(state.tasks.map(task => ({
+            const worksheet = XLSX.utility.json_to_sheet(state.tasks.map(task => ({
                 ...task,
                 notes: task.notes || "None"
             })));
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Todo List");
+            const workbook = XLSX.utility.book_new();
+            XLSX.utility.book_append_sheet(workbook, worksheet, "Todo List");
             XLSX.writeFile(workbook, "Todo_List.xlsx");
         } catch (e) {
             console.error("Export failed:", e);
