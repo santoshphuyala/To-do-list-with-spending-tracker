@@ -1,250 +1,871 @@
-// State Management
-const state = {
-    spendingEntries: [],
-    shoppingItems: [],
-    budgets: {},
-    categories: ["Food", "Rent", "Salary", "Utilities", "Entertainment", "Other"],
-};
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
 
-const defaultCategories = ["Food", "Rent", "Salary", "Utilities", "Entertainment", "Other"];
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
 
-let categoryPieChart, monthlyTrendsChart;
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
 
-// Translation Dictionary
-const translations = {
-    en: {
-        spendingTracker: "Spending Tracker",
-        addEntry: "Add Spending Entry",
-        addIncome: "Add Income",
-        addExpense: "Add Expense",
-        summaryReport: "Summary Report",
-        exportExcel: "Export to Excel",
-        exportPDF: "Export to PDF",
-        amount: "Amount",
-        type: "Type",
-        category: "Category",
-        date: "Date",
-        recurrence: "Recurrence",
-        currency: "Currency",
-        income: "Income",
-        expense: "Expense",
-        food: "Food",
-        rent: "Rent",
-        salary: "Salary",
-        utilities: "Utilities",
-        entertainment: "Entertainment",
-        other: "Other",
-        none: "None",
-        daily: "Daily",
-        weekly: "Weekly",
-        monthly: "Monthly",
-        cancel: "Cancel",
-        addSpendingEntryHeader: "Add Spending Entry",
-        viewSummary: "View Summary",
-        manageEntries: "Manage Entries",
-        setBudget: "Set Budget",
-        manageCategories: "Manage Categories",
-        shoppingList: "Shopping List",
-        enableNotifications: "Enable Notifications",
-        budgetTitle: "Set Monthly Budget",
-        budgetOptional: "Budget setting is optional. Click 'Save' to set budgets, or 'Cancel' to skip.",
-        budgetFor: "Budget for",
-        noBudgetSet: "No budget set.",
-        weeklySummary: "Weekly Summary (Current Week, Monday to Sunday)",
-        monthlySummary: "Monthly Summary",
-        yearlySummary: "Yearly Summary",
-        categoryWiseExpenses: "Category-wise Expenses",
-        monthlyTrends: "Monthly Trends (Last 6 Months)",
-        day: "Day",
-        incomeLabel: "Income",
-        expenses: "Expenses",
-        balance: "Balance",
-        totalIncome: "Total Income",
-        totalExpenses: "Total Expenses",
-        netBalance: "Net Balance",
-        close: "Close",
-        manageEntriesTitle: "Manage Spending Entries",
-        searchPlaceholder: "Search by category or type",
-        filterByType: "Filter by Type",
-        filterByCategory: "Filter by Category",
-        dateRange: "Date Range",
-        startDate: "Start Date",
-        endDate: "End Date",
-        all: "All",
-        actions: "Actions",
-        editSpendingEntry: "Edit Spending Entry",
-        save: "Save",
-        delete: "Delete",
-        newCategory: "New Category",
-        categoryName: "Category Name",
-        addCategory: "Add Category",
-        itemName: "Item Name",
-        quantity: "Quantity",
-        addItem: "Add Item",
-        filterByStatus: "Filter by Status",
-        purchased: "Purchased",
-        notPurchased: "Not Purchased",
-        status: "Status",
-        edit: "Edit",
-        budgetExceeded: "Budget for {category} exceeded! Spent: {spent}, Budget: {budget}",
-        notificationsEnabled: "Notifications are already enabled.",
-        notificationsDenied: "Notification permission was denied. Please enable it in your browser settings.",
-        english: "English",
-        nepali: "Nepali",
-    },
-    ne: {
-        spendingTracker: "खर्च ट्र्याकर",
-        addEntry: "खर्च प्रविष्टि थप्नुहोस्",
-        addIncome: "आय थप्नुहोस्",
-        addExpense: "खर्च थप्नुहोस्",
-        summaryReport: "सारांश प्रतिवेदन",
-        exportExcel: "एक्सेलमा निर्यात गर्नुहोस्",
-        exportPDF: "PDF मा निर्यात गर्नुहोस्",
-        amount: "रकम",
-        type: "प्रकार",
-        category: "श्रेणी",
-        date: "मिति",
-        recurrence: "पुनरावृत्ति",
-        currency: "मुद्रा",
-        income: "आय",
-        expense: "खर्च",
-        food: "खाना",
-        rent: "भाडा",
-        salary: "तलब",
-        utilities: "उपयोगिताहरू",
-        entertainment: "मनोरञ्जन",
-        other: "अन्य",
-        none: "कुनै पनि होइन",
-        daily: "दैनिक",
-        weekly: "साप्ताहिक",
-        monthly: "मासिक",
-        cancel: "रद्द गर्नुहोस्",
-        addSpendingEntryHeader: "खर्च प्रविष्टि थप्नुहोस्",
-        viewSummary: "सारांश हेर्नुहोस्",
-        manageEntries: "प्रविष्टिहरू व्यवस्थापन गर्नुहोस्",
-        setBudget: "बजेट सेट गर्नुहोस्",
-        manageCategories: "श्रेणीहरू व्यवस्थापन गर्नुहोस्",
-        shoppingList: "किनमेल सूची",
-        enableNotifications: "सूचनाहरू सक्षम गर्नुहोस्",
-        budgetTitle: "मासिक बजेट सेट गर्नुहोस्",
-        budgetOptional: "बजेट सेटिङ वैकल्पिक छ। बजेट सेट गर्न 'सेभ' क्लिक गर्नुहोस्, वा 'रद्द' गर्नुहोस्।",
-        budgetFor: "को लागि बजेट",
-        noBudgetSet: "कुनै बजेट सेट गरिएको छैन।",
-        weeklySummary: "साप्ताहिक सारांश (हालको हप्ता, सोमबार देखि आइतबार)",
-        monthlySummary: "मासिक सारांश",
-        yearlySummary: "वार्षिक सारांश",
-        categoryWiseExpenses: "श्रेणी अनुसार खर्च",
-        monthlyTrends: "मासिक प्रवृत्तिहरू (पछिल्लो 6 महिना)",
-        day: "दिन",
-        incomeLabel: "आय",
-        expenses: "खर्च",
-        balance: "सन्तुलन",
-        totalIncome: "कुल आय",
-        totalExpenses: "कुल खर्च",
-        netBalance: "शुद्ध सन्तुलन",
-        close: "बन्द गर्नुहोस्",
-        manageEntriesTitle: "खर्च प्रविष्टिहरू व्यवस्थापन गर्नुहोस्",
-        searchPlaceholder: "श्रेणी वा प्रकार द्वारा खोजी गर्नुहोस्",
-        filterByType: "प्रकार द्वारा फिल्टर गर्नुहोस्",
-        filterByCategory: "श्रेणी द्वारा फिल्टर गर्नुहोस्",
-        dateRange: "मिति दायरा",
-        startDate: "सुरु मिति",
-        endDate: "अन्त्य मिति",
-        all: "सबै",
-        actions: "कार्यहरू",
-        editSpendingEntry: "खर्च प्रविष्टि सम्पादन गर्नुहोस्",
-        save: "सेभ गर्नुहोस्",
-        delete: "हटाउनुहोस्",
-        newCategory: "नयाँ श्रेणी",
-        categoryName: "श्रेणी नाम",
-        addCategory: "श्रेणी थप्नुहोस्",
-        itemName: "वस्तुको नाम",
-        quantity: "मात्रा",
-        addItem: "वस्तु थप्नुहोस्",
-        filterByStatus: "स्थिति द्वारा फिल्टर गर्नुहोस्",
-        purchased: "खरिद गरिएको",
-        notPurchased: "खरिद नगरिएको",
-        status: "स्थिति",
-        edit: "सम्पादन गर्नुहोस्",
-        budgetExceeded: "{category} को लागि बजेट नाघ्यो! खर्च: {spent}, बजेट: {budget}",
-        notificationsEnabled: "सूचनाहरू पहिले नै सक्षम छन्।",
-        notificationsDenied: "सूचना अनुमति अस्वीकार गरिएको छ। कृपया आफ्नो ब्राउजर सेटिङहरूमा सक्षम गर्नुहोस्।",
-        english: "अंग्रेजी",
-        nepali: "नेपाली",
-    }
-};
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="spendingTracker">Spending Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --background-color: #f8f9fa;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --button-bg: #0d6efd;
+            --button-text: #ffffff;
+            --completed-text: gray;
+            --high-bg: #dc3545;
+            --medium-bg: #ffc107;
+            --low-bg: #28a745;
+            --modal-bg: #ffffff;
+            --modal-text: #212529;
+            --chart-text: #212529;
+            --chart-bg: rgba(0, 0, 0, 0.1);
+            --accent-bg: #e9ecef;
+            --button-hover-bg: #0056b3;
+            --button-success-bg: #28a745;
+            --button-success-hover-bg: #218838;
+            --button-info-bg: #17a2b8;
+            --button-info-hover-bg: #138496;
+        }
+        [data-theme="dark"] {
+            --background-color: #212529;
+            --text-color: #f8f9fa;
+            --card-bg: #343a40;
+            --border-color: #495057;
+            --button-bg: #0d6efd;
+            --button-text: #ffffff;
+            --completed-text: #adb5bd;
+            --high-bg: #dc3545;
+            --medium-bg: #ffc107;
+            --low-bg: #28a745;
+            --modal-bg: #343a40;
+            --modal-text: #f8f9fa;
+            --chart-text: #f8f9fa;
+            --chart-bg: rgba(255, 255, 255, 0.1);
+            --accent-bg: #495057;
+            --button-hover-bg: #1a73e8;
+            --button-success-bg: #28a745;
+            --button-success-hover-bg: #2ecc71;
+            --button-info-bg: #17a2b8;
+            --button-info-hover-bg: #1ccad8;
+        }
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+        .container, .list-group-item, .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        .modal-content {
+            background-color: var(--modal-bg);
+            color: var(--modal-text);
+        }
+        .completed { text-decoration: line-through; color: var(--completed-text); }
+        .high { background-color: var(--high-bg); color: white; }
+        .medium { background-color: var(--medium-bg); color: black; }
+        .low { background-color: var(--low-bg); color: white; }
+        .notes-collapse { max-height: 100px; overflow-y: auto; }
+        .btn-primary, .btn-info, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: var(--button-hover-bg);
+        }
+        .btn-success {
+            background-color: var(--button-success-bg);
+        }
+        .btn-success:hover {
+            background-color: var(--button-success-hover-bg);
+        }
+        .btn-info {
+            background-color: var(--button-info-bg);
+        }
+        .btn-info:hover {
+            background-color: var(--button-info-hover-bg);
+        }
+        .spending-entries-table {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .progress {
+            height: 20px;
+            margin-bottom: 10px;
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        [data-theme="dark"] .progress-bar {
+            background-color: #28a745;
+        }
+        [data-theme="dark"] .table {
+            color: var(--text-color);
+        }
+        [data-theme="dark"] .table th,
+        [data-theme="dark"] .table td {
+            border-color: var(--border-color);
+        }
+        canvas {
+            max-width: 100%;
+            margin-bottom: 20px;
+        }
+        .action-buttons {
+            background-color: var(--accent-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .action-buttons .btn {
+            margin: 5px;
+            width: 100%;
+            font-weight: 500;
+            border-radius: 8px;
+        }
+        @media (min-width: 768px) {
+            .action-buttons .btn {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body class="container py-5">
+    <h2 class="text-center mb-4" data-translate="spendingTracker">Spending Tracker</h2>
 
-// Utility Functions
-function getTranslation(key) {
-    const lang = document.getElementById("languageToggle").value;
-    return translations[lang][key];
-}
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <button class="btn btn-primary" id="spendingTrackerBtn" data-translate="addEntry">Add Spending Entry</button>
+        <div>
+            <select id="languageToggle" class="form-select d-inline-block" style="width: auto;">
+                <option value="en" data-translate="english">English</option>
+                <option value="ne" data-translate="nepali">Nepali</option>
+            </select>
+        </div>
+    </div>
 
-function applyTranslations() {
-    document.querySelectorAll("[data-translate]").forEach(elem => {
-        const key = elem.getAttribute("data-translate");
-        elem.textContent = getTranslation(key);
-    });
-    document.querySelectorAll("[data-translate-placeholder]").forEach(elem => {
-        const key = elem.getAttribute("data-translate-placeholder");
-        elem.placeholder = getTranslation(key);
-    });
-    document.querySelectorAll("select option[data-translate]").forEach(option => {
-        const key = option.getAttribute("data-translate");
-        option.textContent = getTranslation(key);
-    });
-}
+    <!-- New Add Spending Entry Section -->
+    <div class="action-buttons">
+        <h4 class="mb-3" data-translate="addSpendingEntryHeader">Add Spending Entry</h4>
+        <div class="row g-2">
+            <div class="col-12 col-md-4 col-lg-2">
+                <button class="btn btn-success" id="addIncomeBtn" data-translate="addIncome">Add Income</button>
+            </div>
+            <div class="col-12 col-md-4 col-lg-2">
+                <button class="btn btn-danger" id="addExpenseBtn" data-translate="addExpense">Add Expense</button>
+            </div>
+            <div class="col-12 col-md-4 col-lg-2">
+                <button class="btn btn-info" id="summaryReportBtn" data-translate="summaryReport">Summary Report</button>
+            </div>
+            <div class="col-12 col-md-6 col-lg-2">
+                <button class="btn btn-primary" id="exportExcelBtn" data-translate="exportExcel">Export to Excel</button>
+            </div>
+            <div class="col-12 col-md-6 col-lg-2">
+                <button class="btn btn-primary" id="exportPDFBtn" data-translate="exportPDF">Export to PDF</button>
+            </div>
+        </div>
+    </div>
 
-function debounce(func, delay) {
-    let timeoutId;
-    return function (...args) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => func.apply(this, args), delay);
+    <!-- Spending Tracker Modal -->
+    <div class="modal fade" id="spendingTrackerModal" tabindex="-1" aria-labelledby="spendingTrackerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="spendingTrackerModalLabel" data-translate="spendingTracker">Spending Tracker</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="spendingAmount" class="form-label" data-translate="amount">Amount</label>
+                        <input type="number" id="spendingAmount" class="form-control" placeholder="Enter amount" min="0" step="0.01" aria-label="Spending amount">
+                        <div class="invalid-feedback">Please enter a valid amount.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="spendingType" class="form-label" data-translate="type">Type</label>
+                        <select id="spendingType" class="form-select" aria-label="Spending type">
+                            <option value="Income" data-translate="income">Income</option>
+                            <option value="Expense" data-translate="expense">Expense</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="spendingCategory" class="form-label" data-translate="category">Category</label>
+                        <select id="spendingCategory" class="form-select" aria-label="Spending category">
+                            <option value="Food" data-translate="food">Food</option>
+                            <option value="Rent" data-translate="rent">Rent</option>
+                            <option value="Salary" data-translate="salary">Salary</option>
+                            <option value="Utilities" data-translate="utilities">Utilities</option>
+                            <option value="Entertainment" data-translate="entertainment">Entertainment</option>
+                            <option value="Other" data-translate="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="spendingDate" class="form-label" data-translate="date">Date</label>
+                        <input type="date" id="spendingDate" class="form-control" aria-label="Spending date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="spendingRecurrence" class="form-label" data-translate="recurrence">Recurrence</label>
+                        <select id="spendingRecurrence" class="form-select" aria-label="Spending recurrence">
+                            <option value="none" data-translate="none">None</option>
+                            <option value="daily" data-translate="daily">Daily</option>
+                            <option value="weekly" data-translate="weekly">Weekly</option>
+                            <option value="monthly" data-translate="monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="spendingCurrency" class="form-label" data-translate="currency">Currency</label>
+                        <select id="spendingCurrency" class="form-select" aria-label="Spending currency">
+                            <option value="NRs">NRs</option>
+                            <option value="USD">USD</option>
+                            <option value="GBP">GBP</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="addSpendingBtn" data-translate="addEntry">Add Entry</button>
+                    <button type="button" class="btn btn-info" id="viewSummaryBtn" data-translate="viewSummary">View Summary</button>
+                    <button type="button" class="btn btn-warning" id="manageEntriesBtn" data-translate="manageEntries">Manage Entries</button>
+                    <button type="button" class="btn btn-success" id="setBudgetBtn" data-translate="setBudget">Set Budget</button>
+                    <button type="button" class="btn btn-info" id="manageCategoriesBtn" data-translate="manageCategories">Manage Categories</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spending Summary Modal -->
+    <div class="modal fade" id="spendingSummaryModal" tabindex="-1" aria-labelledby="spendingSummaryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="spendingSummaryModalLabel" data-translate="viewSummary">Spending Summary</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Budget Overview -->
+                    <h6 data-translate="budgetTitle">Set Monthly Budget</h6>
+                    <div id="budgetOverview" class="mb-4"></div>
+
+                    <!-- Weekly Summary -->
+                    <h6 data-translate="weeklySummary">Weekly Summary (Current Week, Monday to Sunday)</h6>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th data-translate="day">Day</th>
+                                <th data-translate="incomeLabel">Income</th>
+                                <th data-translate="expenses">Expenses</th>
+                                <th data-translate="balance">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="weeklySummary"></tbody>
+                    </table>
+
+                    <!-- Monthly Summary -->
+                    <h6 data-translate="monthlySummary">Monthly Summary</h6>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th data-translate="totalIncome">Total Income</th>
+                                <th data-translate="totalExpenses">Total Expenses</th>
+                                <th data-translate="netBalance">Net Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthlySummary"></tbody>
+                    </table>
+
+                    <!-- Yearly Summary -->
+                    <h6 data-translate="yearlySummary">Yearly Summary</h6>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th data-translate="totalIncome">Total Income</th>
+                                <th data-translate="totalExpenses">Total Expenses</th>
+                                <th data-translate="netBalance">Net Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="yearlySummary"></tbody>
+                    </table>
+
+                    <!-- Charts -->
+                    <h6 data-translate="categoryWiseExpenses">Category-wise Expenses</h6>
+                    <canvas id="categoryPieChart"></canvas>
+                    <h6 data-translate="monthlyTrends">Monthly Trends (Last 6 Months)</h6>
+                    <canvas id="monthlyTrendsChart"></canvas>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info" id="exportSpendingExcelBtn" data-translate="exportExcel">Export to Excel</button>
+                    <button type="button" class="btn btn-info" id="exportSpendingPDFBtn" data-translate="exportPDF">Export to PDF</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="close">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Spending Entries Modal -->
+    <div class="modal fade" id="manageEntriesModal" tabindex="-1" aria-labelledby="manageEntriesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manageEntriesModalLabel" data-translate="manageEntriesTitle">Manage Spending Entries</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Search and Filter -->
+                    <div class="mb-3">
+                        <input type="text" id="searchEntries" class="form-control mb-2" data-translate-placeholder="searchPlaceholder" placeholder="Search by category or type">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="filterType" class="form-label" data-translate="filterByType">Filter by Type</label>
+                                <select id="filterType" class="form-select">
+                                    <option value="all" data-translate="all">All</option>
+                                    <option value="Income" data-translate="income">Income</option>
+                                    <option value="Expense" data-translate="expense">Expense</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="filterCategory" class="form-label" data-translate="filterByCategory">Filter by Category</label>
+                                <select id="filterCategory" class="form-select">
+                                    <option value="all" data-translate="all">All</option>
+                                    <option value="Food" data-translate="food">Food</option>
+                                    <option value="Rent" data-translate="rent">Rent</option>
+                                    <option value="Salary" data-translate="salary">Salary</option>
+                                    <option value="Utilities" data-translate="utilities">Utilities</option>
+                                    <option value="Entertainment" data-translate="entertainment">Entertainment</option>
+                                    <option value="Other" data-translate="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" data-translate="dateRange">Date Range</label>
+                                <div class="d-flex">
+                                    <input type="date" id="filterStartDate" class="form-control me-2" data-translate-placeholder="startDate" placeholder="Start Date">
+                                    <input type="date" id="filterEndDate" class="form-control" data-translate-placeholder="endDate" placeholder="End Date">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="spending-entries-table">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th data-translate="date">Date</th>
+                                    <th data-translate="type">Type</th>
+                                    <th data-translate="category">Category</th>
+                                    <th data-translate="amount">Amount</th>
+                                    <th data-translate="actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="spendingEntriesList"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="close">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Spending Entry Modal -->
+    <div class="modal fade" id="editSpendingModal" tabindex="-1" aria-labelledby="editSpendingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editSpendingModalLabel" data-translate="editSpendingEntry">Edit Spending Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editSpendingAmount" class="form-label" data-translate="amount">Amount</label>
+                        <input type="number" id="editSpendingAmount" class="form-control" placeholder="Enter amount" min="0" step="0.01" aria-label="Edit spending amount">
+                        <div class="invalid-feedback">Please enter a valid amount.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSpendingType" class="form-label" data-translate="type">Type</label>
+                        <select id="editSpendingType" class="form-select" aria-label="Edit spending type">
+                            <option value="Income" data-translate="income">Income</option>
+                            <option value="Expense" data-translate="expense">Expense</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSpendingCategory" class="form-label" data-translate="category">Category</label>
+                        <select id="editSpendingCategory" class="form-select" aria-label="Edit spending category">
+                            <option value="Food" data-translate="food">Food</option>
+                            <option value="Rent" data-translate="rent">Rent</option>
+                            <option value="Salary" data-translate="salary">Salary</option>
+                            <option value="Utilities" data-translate="utilities">Utilities</option>
+                            <option value="Entertainment" data-translate="entertainment">Entertainment</option>
+                            <option value="Other" data-translate="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSpendingDate" class="form-label" data-translate="date">Date</label>
+                        <input type="date" id="editSpendingDate" class="form-control" aria-label="Edit spending date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSpendingRecurrence" class="form-label" data-translate="recurrence">Recurrence</label>
+                        <select id="editSpendingRecurrence" class="form-select" aria-label="Edit spending recurrence">
+                            <option value="none" data-translate="none">None</option>
+                            <option value="daily" data-translate="daily">Daily</option>
+                            <option value="weekly" data-translate="weekly">Weekly</option>
+                            <option value="monthly" data-translate="monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editSpendingCurrency" class="form-label" data-translate="currency">Currency</label>
+                        <select id="editSpendingCurrency" class="form-select" aria-label="Edit spending currency">
+                            <option value="NRs">NRs</option>
+                            <option value="USD">USD</option>
+                            <option value="GBP">GBP</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveEditSpendingBtn" data-translate="save">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Set Budget Modal -->
+    <div class="modal fade" id="setBudgetModal" tabindex="-1" aria-labelledby="setBudgetModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="setBudgetModalLabel" data-translate="budgetTitle">Set Monthly Budget</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="budgetInputs">
+                    <p data-translate="budgetOptional">Budget setting is optional. Click 'Save' to set budgets, or 'Cancel' to skip.</p>
+                    <!-- Budget inputs will be dynamically generated -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveBudgetBtn" data-translate="save">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Categories Modal -->
+    <div class="modal fade" id="manageCategoriesModal" tabindex="-1" aria-labelledby="manageCategoriesModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manageCategoriesModalLabel" data-translate="manageCategories">Manage Categories</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newCategoryInput" class="form-label" data-translate="newCategory">New Category</label>
+                        <div class="input-group">
+                            <input type="text" id="newCategoryInput" class="form-control" data-translate-placeholder="categoryName" placeholder="Category Name">
+                            <button class="btn btn-primary" id="addCategoryBtn" data-translate="addCategory">Add Category</button>
+                        </div>
+                        <div class="invalid-feedback">Category name cannot be empty.</div>
+                    </div>
+                    <h6 data-translate="category">Categories</h6>
+                    <ul id="categoryList" class="list-group"></ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="close">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="utils.js"></script>
+    <script>
+(function () {
+    // State management
+    const state = {
+        spendingEntries: [],
+        budgets: {},
+        categories: ["Food", "Rent", "Salary", "Utilities", "Entertainment", "Other"]
     };
-}
 
-function saveSpendingEntries() {
-    try {
-        if (state.spendingEntries.length > 1000) {
-            state.spendingEntries = state.spendingEntries.slice(-1000);
-            console.warn("Spending entries exceeded 1000; older entries have been removed.");
+    let currentEditSpendingIndex = null;
+    let categoryPieChart = null;
+    let monthlyTrendsChart = null;
+    const { jsPDF } = window.jspdf;
+
+    // Default categories that cannot be deleted
+    const defaultCategories = ["Food", "Rent", "Salary", "Utilities", "Entertainment", "Other"];
+
+    // Listen for theme changes from parent
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.theme) {
+            document.documentElement.setAttribute('data-theme', event.data.theme);
+            updateCharts();
         }
-        checkStorageCapacity();
-        localStorage.setItem("spendingEntries", minifyJSON(state.spendingEntries));
-    } catch (e) {
-        console.error("Failed to save spending entries:", e);
-        alert("Unable to save spending entries. Please check your browser settings.");
-        throw e;
-    }
-}
+    });
 
-function saveShoppingItems() {
-    try {
-        if (state.shoppingItems.length > 500) {
-            state.shoppingItems = state.shoppingItems.slice(-500);
-            console.warn("Shopping items exceeded 500; older items have been removed.");
+    // Initialize
+    document.addEventListener("DOMContentLoaded", () => {
+        try {
+            const storedSpending = localStorage.getItem("spendingEntries");
+            if (storedSpending) {
+                state.spendingEntries = parseMinifiedJSON(storedSpending);
+            }
+            const storedBudgets = localStorage.getItem("spendingBudgets");
+            if (storedBudgets) {
+                state.budgets = parseMinifiedJSON(storedBudgets);
+            }
+            const storedCategories = localStorage.getItem("spendingCategories");
+            if (storedCategories) {
+                const customCategories = parseMinifiedJSON(storedCategories);
+                state.categories = [...defaultCategories, ...customCategories];
+            }
+            const storedLanguage = localStorage.getItem("selectedLanguage");
+            if (storedLanguage) {
+                document.getElementById("languageToggle").value = storedLanguage;
+            }
+        } catch (e) {
+            console.error("Failed to load data:", e);
+            alert("Unable to load data. Please check your browser settings.");
         }
-        checkStorageCapacity();
-        localStorage.setItem("shoppingItems", minifyJSON(state.shoppingItems));
-    } catch (e) {
-        console.error("Failed to save shopping items:", e);
-        alert("Unable to save shopping items. Please check your browser settings.");
+        document.getElementById("spendingDate").value = new Date().toISOString().split("T")[0];
+        applyTheme();
+        applyTranslations();
+        initializeEventListeners();
+        populateCategoryDropdowns();
+        checkRecurringEntries();
+        requestNotificationPermission();
+    });
+
+    /**
+     * Request notification permission for budget alerts
+     */
+    function requestNotificationPermission() {
+        if ('Notification' in window) {
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        console.log('Notification permission granted.');
+                    }
+                });
+            }
+        }
     }
-}
 
-function saveCategories() {
-    const customCategories = state.categories.filter(cat => !defaultCategories.includes(cat));
-    localStorage.setItem("spendingCategories", minifyJSON(customCategories));
-    populateCategoryDropdowns();
-}
+    /**
+     * Initializes all event listeners for buttons.
+     */
+    function initializeEventListeners() {
+        document.getElementById("spendingTrackerBtn").addEventListener("click", openSpendingTrackerModal);
+        document.getElementById("addIncomeBtn").addEventListener("click", () => openSpendingTrackerModal("Income"));
+        document.getElementById("addExpenseBtn").addEventListener("click", () => openSpendingTrackerModal("Expense"));
+        document.getElementById("summaryReportBtn").addEventListener("click", showSpendingSummary);
+        document.getElementById("exportExcelBtn").addEventListener("click", exportSpendingToExcel);
+        document.getElementById("exportPDFBtn").addEventListener("click", exportSpendingToPDF);
+        document.getElementById("addSpendingBtn").addEventListener("click", addSpendingEntry);
+        document.getElementById("viewSummaryBtn").addEventListener("click", showSpendingSummary);
+        document.getElementById("manageEntriesBtn").addEventListener("click", showManageEntries);
+        document.getElementById("setBudgetBtn").addEventListener("click", openSetBudgetModal);
+        document.getElementById("manageCategoriesBtn").addEventListener("click", openManageCategoriesModal);
+        document.getElementById("exportSpendingExcelBtn").addEventListener("click", exportSpendingToExcel);
+        document.getElementById("exportSpendingPDFBtn").addEventListener("click", exportSpendingToPDF);
+        document.getElementById("saveEditSpendingBtn").addEventListener("click", saveEditedSpendingEntry);
+        document.getElementById("saveBudgetBtn").addEventListener("click", saveBudgets);
+        document.getElementById("addCategoryBtn").addEventListener("click", addCategory);
+        document.getElementById("languageToggle").addEventListener("change", () => {
+            const lang = document.getElementById("languageToggle").value;
+            localStorage.setItem("selectedLanguage", lang);
+            applyTranslations();
+            populateCategoryDropdowns();
+            showManageEntries();
+            showSpendingSummary();
+        });
+        document.getElementById("searchEntries").addEventListener("input", debounce(() => {
+            showManageEntries();
+        }, 300));
+        document.getElementById("filterType").addEventListener("change", showManageEntries);
+        document.getElementById("filterCategory").addEventListener("change", showManageEntries);
+        document.getElementById("filterStartDate").addEventListener("change", showManageEntries);
+        document.getElementById("filterEndDate").addEventListener("change", showManageEntries);
 
-function checkRecurringEntries() {
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
-    state.spendingEntries.forEach((entry, index) => {
-        if (entry.recurring && entry.date && new Date(entry.date) < today) {
-            let newDate = new Date(entry.date);
-            while (newDate < today) {
+        // Keyboard navigation for buttons
+        document.querySelectorAll(".btn").forEach(btn => {
+            btn.addEventListener("keydown", (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    btn.click();
+                    e.preventDefault();
+                }
+            });
+        });
+    }
+
+    /**
+     * Saves spending entries to localStorage.
+     */
+    function saveSpendingEntries() {
+        try {
+            checkStorageCapacity();
+            localStorage.setItem("spendingEntries", minifyJSON(state.spendingEntries));
+        } catch (e) {
+            console.error("Failed to save spending entries:", e);
+            alert("Unable to save spending entries. Please check your browser settings.");
+            throw e;
+        }
+    }
+
+    /**
+     * Saves budgets to localStorage.
+     */
+    function saveBudgets() {
+        try {
+            const newBudgets = {};
+            state.categories.forEach(category => {
+                const budgetInput = document.getElementById(`budget-${category}`);
+                const budgetValue = parseFloat(budgetInput.value) || 0;
+                if (budgetValue > 0) {
+                    newBudgets[category] = budgetValue;
+                }
+            });
+            state.budgets = newBudgets;
+            localStorage.setItem("spendingBudgets", minifyJSON(state.budgets));
+            bootstrap.Modal.getInstance(document.getElementById("setBudgetModal")).hide();
+            showSpendingSummary();
+        } catch (e) {
+            console.error("Failed to save budgets:", e);
+            alert("Failed to save budgets. Please try again.");
+        }
+    }
+
+    /**
+     * Saves custom categories to localStorage.
+     */
+    function saveCategories() {
+        try {
+            const customCategories = state.categories.filter(cat => !defaultCategories.includes(cat));
+            localStorage.setItem("spendingCategories", minifyJSON(customCategories));
+            populateCategoryDropdowns();
+        } catch (e) {
+            console.error("Failed to save categories:", e);
+            alert("Failed to save categories. Please try again.");
+        }
+    }
+
+    /**
+     * Opens the spending tracker modal, optionally pre-selecting the type.
+     */
+    function openSpendingTrackerModal(type = null) {
+        document.getElementById("spendingAmount").value = "";
+        document.getElementById("spendingAmount").classList.remove("is-invalid");
+        document.getElementById("spendingType").value = type || "Income";
+        document.getElementById("spendingCategory").value = "Food";
+        document.getElementById("spendingDate").value = new Date().toISOString().split("T")[0];
+        document.getElementById("spendingRecurrence").value = "none";
+        document.getElementById("spendingCurrency").value = localStorage.getItem("defaultCurrency") || "NRs";
+        new bootstrap.Modal(document.getElementById("spendingTrackerModal")).show();
+    }
+
+    /**
+     * Opens the set budget modal.
+     */
+    function openSetBudgetModal() {
+        const budgetInputs = document.getElementById("budgetInputs");
+        budgetInputs.innerHTML = '<p data-translate="budgetOptional">Budget setting is optional. Click \'Save\' to set budgets, or \'Cancel\' to skip.</p>';
+        state.categories.forEach(category => {
+            const div = document.createElement("div");
+            div.className = "mb-3";
+            div.innerHTML = `
+                <label for="budget-${category}" class="form-label" data-translate="budgetFor">${getTranslation("budgetFor")} ${category}</label>
+                <input type="number" id="budget-${category}" class="form-control" value="${state.budgets[category] || ''}" min="0" step="0.01" placeholder="0.00">
+            `;
+            budgetInputs.appendChild(div);
+        });
+        applyTranslations();
+        new bootstrap.Modal(document.getElementById("setBudgetModal")).show();
+    }
+
+    /**
+     * Opens the manage categories modal.
+     */
+    function openManageCategoriesModal() {
+        document.getElementById("newCategoryInput").value = "";
+        document.getElementById("newCategoryInput").classList.remove("is-invalid");
+        populateCategoryList();
+        new bootstrap.Modal(document.getElementById("manageCategoriesModal")).show();
+    }
+
+    /**
+     * Adds a new custom category.
+     */
+    function addCategory() {
+        const newCategoryInput = document.getElementById("newCategoryInput");
+        const newCategory = newCategoryInput.value.trim();
+        if (!newCategory) {
+            newCategoryInput.classList.add("is-invalid");
+            return;
+        }
+        if (state.categories.includes(newCategory)) {
+            alert("Category already exists.");
+            return;
+        }
+        state.categories.push(newCategory);
+        saveCategories();
+        populateCategoryList();
+        newCategoryInput.value = "";
+        newCategoryInput.classList.remove("is-invalid");
+    }
+
+    /**
+     * Populates the category list in the manage categories modal.
+     */
+    function populateCategoryList() {
+        const categoryList = document.getElementById("categoryList");
+        categoryList.innerHTML = "";
+        state.categories.forEach(category => {
+            const li = document.createElement("li");
+            li.className = "list-group-item d-flex justify-content-between align-items-center";
+            li.textContent = category;
+            if (!defaultCategories.includes(category)) {
+                const deleteBtn = document.createElement("button");
+                deleteBtn.className = "btn btn-danger btn-sm";
+                deleteBtn.textContent = "Delete";
+                deleteBtn.onclick = () => deleteCategory(category);
+                li.appendChild(deleteBtn);
+            }
+            categoryList.appendChild(li);
+        });
+    }
+
+    /**
+     * Deletes a custom category.
+     */
+    function deleteCategory(category) {
+        if (confirm(getTranslation("deleteCategoryConfirm"))) {
+            state.categories = state.categories.filter(cat => cat !== category);
+            state.spendingEntries.forEach(entry => {
+                if (entry.category === category) {
+                    entry.category = "Other";
+                }
+            });
+            delete state.budgets[category];
+            saveCategories();
+            saveSpendingEntries();
+            localStorage.setItem("spendingBudgets", minifyJSON(state.budgets));
+            populateCategoryList();
+            populateCategoryDropdowns();
+            showManageEntries();
+            showSpendingSummary();
+        }
+    }
+
+    /**
+     * Populates category dropdowns in all modals.
+     */
+    function populateCategoryDropdowns() {
+        const dropdowns = [
+            document.getElementById("spendingCategory"),
+            document.getElementById("editSpendingCategory"),
+            document.getElementById("filterCategory")
+        ];
+        dropdowns.forEach(dropdown => {
+            const selectedValue = dropdown.value;
+            dropdown.innerHTML = dropdown.id === "filterCategory" ? '<option value="all" data-translate="all">All</option>' : '';
+            state.categories.forEach(category => {
+                const option = document.createElement("option");
+                option.value = category;
+                option.textContent = category;
+                dropdown.appendChild(option);
+            });
+            dropdown.value = selectedValue in state.categories || dropdown.id !== "filterCategory" ? selectedValue : "all";
+        });
+        applyTranslations();
+    }
+
+    /**
+     * Adds a new spending entry.
+     */
+    function addSpendingEntry() {
+        const amountInput = document.getElementById("spendingAmount");
+        const amount = parseFloat(amountInput.value);
+        const type = document.getElementById("spendingType").value;
+        const category = document.getElementById("spendingCategory").value;
+        const date = document.getElementById("spendingDate").value;
+        const recurrence = document.getElementById("spendingRecurrence").value;
+        const currency = document.getElementById("spendingCurrency").value;
+
+        if (isNaN(amount) || amount <= 0) {
+            amountInput.classList.add("is-invalid");
+            return;
+        }
+        amountInput.classList.remove("is-invalid");
+
+        try {
+            state.spendingEntries.push({
+                amount,
+                type,
+                category,
+                date,
+                recurrence,
+                currency,
+                recurring: recurrence !== "none"
+            });
+            saveSpendingEntries();
+            checkBudgetAlerts(category);
+            bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal")).hide();
+            alert("Spending entry added successfully!");
+        } catch (e) {
+            console.error("Failed to add spending entry:", e);
+            alert("Failed to add spending entry. Please try again.");
+        }
+    }
+
+    /**
+     * Checks for recurring entries and generates new ones.
+     */
+    function checkRecurringEntries() {
+        const today = new Date().toISOString().split("T")[0];
+        state.spendingEntries.forEach((entry, index) => {
+            if (entry.recurring && entry.date && new Date(entry.date) < new Date(today)) {
+                const newDate = new Date(entry.date);
                 if (entry.recurrence === "daily") {
                     newDate.setDate(newDate.getDate() + 1);
                 } else if (entry.recurrence === "weekly") {
@@ -252,952 +873,556 @@ function checkRecurringEntries() {
                 } else if (entry.recurrence === "monthly") {
                     newDate.setMonth(newDate.getMonth() + 1);
                 }
-            }
-            state.spendingEntries[index].date = newDate.toISOString().split("T")[0];
-            if (newDate > today) {
-                state.spendingEntries[index].recurring = true;
-            } else {
                 state.spendingEntries.push({
                     ...entry,
                     date: newDate.toISOString().split("T")[0],
-                    recurring: false
+                    recurring: true
                 });
                 state.spendingEntries[index].recurring = false;
             }
-        }
-    });
-    saveSpendingEntries();
-    setTimeout(checkRecurringEntries, 5 * 60 * 1000);
-}
-
-function convertToDefaultCurrency(amount, currency) {
-    const defaultCurrency = localStorage.getItem("defaultCurrency") || "NRs";
-    const exchangeRates = {
-        "NRs": 1,
-        "USD": 0.0074,
-        "GBP": 0.0056
-    };
-    if (currency === defaultCurrency) return amount;
-    const amountInNRs = amount / exchangeRates[currency];
-    return amountInNRs * exchangeRates[defaultCurrency];
-}
-
-function populateCategoryDropdowns() {
-    const dropdowns = [
-        "spendingCategory",
-        "editSpendingCategory",
-        "filterCategory",
-        "shoppingItemCategory",
-        "editShoppingItemCategory",
-        "filterShoppingCategory"
-    ];
-    dropdowns.forEach(dropdownId => {
-        const dropdown = document.getElementById(dropdownId);
-        if (!dropdown) return;
-        const currentValue = dropdown.value;
-        const options = state.categories.map(category => {
-            const option = document.createElement("option");
-            option.value = category;
-            option.textContent = getTranslation(category.toLowerCase()) || category;
-            return option;
         });
-        dropdown.innerHTML = "";
-        if (dropdownId === "filterCategory" || dropdownId === "filterShoppingCategory") {
-            const allOption = document.createElement("option");
-            allOption.value = "all";
-            allOption.textContent = getTranslation("all");
-            dropdown.appendChild(allOption);
-        }
-        options.forEach(option => dropdown.appendChild(option));
-        dropdown.value = currentValue in state.categories ? currentValue : state.categories[0];
-    });
-}
-
-// Modal Functions
-function openSpendingTrackerModal(type = null) {
-    const modal = new bootstrap.Modal(document.getElementById("spendingTrackerModal"));
-    if (type) {
-        document.getElementById("spendingType").value = type;
+        saveSpendingEntries();
+        setTimeout(checkRecurringEntries, 5 * 60 * 1000);
     }
-    modal.show();
-}
 
-function calculateMonthlyExpenses(category) {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return state.spendingEntries
-        .filter(entry => {
-            const entryDate = new Date(entry.date);
-            return entry.type === "Expense" &&
-                   entry.category === category &&
-                   entryDate >= startOfMonth &&
-                   entryDate <= endOfMonth;
-        })
-        .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-}
+    /**
+     * Checks if a category's budget is exceeded and triggers an alert.
+     */
+    function checkBudgetAlerts(category) {
+        if (!state.budgets[category]) return;
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const monthlyExpenses = state.spendingEntries
+            .filter(entry => {
+                const entryDate = new Date(entry.date);
+                return entry.type === "Expense" &&
+                       entry.category === category &&
+                       entryDate >= monthStart &&
+                       entryDate <= monthEnd;
+            })
+            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+        if (monthlyExpenses > state.budgets[category]) {
+            const message = getTranslation("budgetExceeded")
+                .replace("{category}", category)
+                .replace("{spent}", monthlyExpenses.toFixed(2))
+                .replace("{budget}", state.budgets[category].toFixed(2));
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('Budget Alert', {
+                    body: message,
+                    icon: 'https://via.placeholder.com/32'
+                });
+            } else {
+                alert(message);
+            }
+        }
+    }
 
-function checkBudgetAlerts(category) {
-    if (!state.budgets[category]) return;
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    const monthlyExpenses = state.spendingEntries
-        .filter(entry => {
-            const entryDate = new Date(entry.date);
-            return entry.type === "Expense" &&
-                   entry.category === category &&
-                   entryDate >= monthStart &&
-                   entryDate <= monthEnd;
-        })
-        .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-    if (monthlyExpenses > state.budgets[category]) {
-        const message = getTranslation("budgetExceeded")
-            .replace("{category}", category)
-            .replace("{spent}", monthlyExpenses.toFixed(2))
-            .replace("{budget}", state.budgets[category].toFixed(2));
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Budget Alert', {
-                body: message,
-                icon: 'https://cdn-icons-png.flaticon.com/32/948/948739.png' // Publicly available budget icon
-            });
+    /**
+     * Shows the manage entries modal with a list of all spending entries.
+     */
+    function showManageEntries() {
+        bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal")).hide();
+        const entriesList = document.getElementById("spendingEntriesList");
+        entriesList.innerHTML = "";
+
+        // Apply filters
+        let filteredEntries = [...state.spendingEntries];
+        const searchQuery = document.getElementById("searchEntries").value.toLowerCase();
+        const filterType = document.getElementById("filterType").value;
+        const filterCategory = document.getElementById("filterCategory").value;
+        const startDate = document.getElementById("filterStartDate").value;
+        const endDate = document.getElementById("filterEndDate").value;
+
+        if (searchQuery) {
+            filteredEntries = filteredEntries.filter(entry =>
+                entry.category.toLowerCase().includes(searchQuery) ||
+                entry.type.toLowerCase().includes(searchQuery)
+            );
+        }
+        if (filterType !== "all") {
+            filteredEntries = filteredEntries.filter(entry => entry.type === filterType);
+        }
+        if (filterCategory !== "all") {
+            filteredEntries = filteredEntries.filter(entry => entry.category === filterCategory);
+        }
+        if (startDate) {
+            filteredEntries = filteredEntries.filter(entry => entry.date >= startDate);
+        }
+        if (endDate) {
+            filteredEntries = filteredEntries.filter(entry => entry.date <= endDate);
+        }
+
+        if (filteredEntries.length === 0) {
+            entriesList.innerHTML = `<tr><td colspan="5">${getTranslation("noEntries") || "No spending entries found."}</td></tr>`;
         } else {
-            alert(message);
+            filteredEntries.forEach((entry, index) => {
+                const convertedAmount = convertToDefaultCurrency(entry.amount, entry.currency);
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${entry.date}</td>
+                    <td>${entry.type}</td>
+                    <td>${entry.category}</td>
+                    <td>${convertedAmount.toFixed(2)} ${localStorage.getItem("defaultCurrency") || "NRs"} (Original: ${entry.amount.toFixed(2)} ${entry.currency})</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm me-2" onclick="editSpendingEntry(${index})" data-translate="edit">Edit</button>
+                        <button class="btn btn-danger btn-sm me-2" onclick="deleteSpendingEntry(${index})" data-translate="delete">Delete</button>
+                        ${entry.recurring ? `<button class="btn btn-secondary btn-sm" onclick="stopRecurrence(${index})" data-translate="stopRecurrence">Stop Recurrence</button>` : ""}
+                    </td>
+                `;
+                entriesList.appendChild(row);
+            });
+        }
+        applyTranslations();
+        new bootstrap.Modal(document.getElementById("manageEntriesModal")).show();
+    }
+
+    /**
+     * Opens the edit spending entry modal.
+     */
+    window.editSpendingEntry = function(index) {
+        currentEditSpendingIndex = index;
+        const entry = state.spendingEntries[index];
+        document.getElementById("editSpendingAmount").value = entry.amount;
+        document.getElementById("editSpendingAmount").classList.remove("is-invalid");
+        document.getElementById("editSpendingType").value = entry.type;
+        document.getElementById("editSpendingCategory").value = entry.category;
+        document.getElementById("editSpendingDate").value = entry.date;
+        document.getElementById("editSpendingRecurrence").value = entry.recurrence;
+        document.getElementById("editSpendingCurrency").value = entry.currency;
+        new bootstrap.Modal(document.getElementById("editSpendingModal")).show();
+    };
+
+    /**
+     * Saves the edited spending entry.
+     */
+    function saveEditedSpendingEntry() {
+        const amountInput = document.getElementById("editSpendingAmount");
+        const amount = parseFloat(amountInput.value);
+        const type = document.getElementById("editSpendingType").value;
+        const category = document.getElementById("editSpendingCategory").value;
+        const date = document.getElementById("editSpendingDate").value;
+        const recurrence = document.getElementById("editSpendingRecurrence").value;
+        const currency = document.getElementById("editSpendingCurrency").value;
+
+        if (isNaN(amount) || amount <= 0) {
+            amountInput.classList.add("is-invalid");
+            return;
+        }
+        amountInput.classList.remove("is-invalid");
+
+        try {
+            state.spendingEntries[currentEditSpendingIndex] = {
+                amount,
+                type,
+                category,
+                date,
+                recurrence,
+                currency,
+                recurring: recurrence !== "none"
+            };
+            saveSpendingEntries();
+            checkBudgetAlerts(category);
+            bootstrap.Modal.getInstance(document.getElementById("editSpendingModal")).hide();
+            showManageEntries();
+            alert("Spending entry updated successfully!");
+        } catch (e) {
+            console.error("Failed to update spending entry:", e);
+            alert("Failed to update spending entry. Please try again.");
         }
     }
-}
-                       function showSpendingSummary() {
-    const budgetOverview = document.getElementById("budgetOverview");
-    budgetOverview.innerHTML = "";
-    if (Object.keys(state.budgets).length === 0) {
-        budgetOverview.textContent = getTranslation("noBudgetSet");
-    } else {
-        Object.keys(state.budgets).forEach(category => {
-            const spent = calculateMonthlyExpenses(category);
-            const p = document.createElement("p");
-            p.textContent = `${getTranslation("budgetFor")} ${category}: ${state.budgets[category].toFixed(2)} ${localStorage.getItem("defaultCurrency") || "NRs"} (Spent: ${spent.toFixed(2)})`;
-            budgetOverview.appendChild(p);
-        });
-    }
 
-    // Weekly Summary
-    const weeklySummary = document.getElementById("weeklySummary");
-    weeklySummary.innerHTML = "";
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    let runningBalance = 0;
-
-    for (let i = 0; i < 7; i++) {
-        const dayDate = new Date(startOfWeek);
-        dayDate.setDate(startOfWeek.getDate() + i);
-        const dayEntries = state.spendingEntries.filter(entry => {
-            return new Date(entry.date).toDateString() === dayDate.toDateString();
-        });
-        const income = dayEntries
-            .filter(entry => entry.type === "Income")
-            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-        const expenses = dayEntries
-            .filter(entry => entry.type === "Expense")
-            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-        runningBalance += (income - expenses);
-
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${days[i]}</td>
-            <td>${income.toFixed(2)}</td>
-            <td>${expenses.toFixed(2)}</td>
-            <td>${runningBalance.toFixed(2)}</td>
-        `;
-        weeklySummary.appendChild(row);
-    }
-
-    // Monthly Summary
-    const monthlySummary = document.getElementById("monthlySummary");
-    monthlySummary.innerHTML = "";
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    const monthlyEntries = state.spendingEntries.filter(entry => {
-        const entryDate = new Date(entry.date);
-        return entryDate >= startOfMonth && entryDate <= endOfMonth;
-    });
-    const monthlyIncome = monthlyEntries
-        .filter(entry => entry.type === "Income")
-        .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-    const monthlyExpenses = monthlyEntries
-        .filter(entry => entry.type === "Expense")
-        .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-    const monthlyRow = document.createElement("tr");
-    monthlyRow.innerHTML = `
-        <td>${monthlyIncome.toFixed(2)}</td>
-        <td>${monthlyExpenses.toFixed(2)}</td>
-        <td>${(monthlyIncome - monthlyExpenses).toFixed(2)}</td>
-    `;
-    monthlySummary.appendChild(monthlyRow);
-
-    // Yearly Summary
-    const yearlySummary = document.getElementById("yearlySummary");
-    yearlySummary.innerHTML = "";
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const endOfYear = new Date(now.getFullYear(), 11, 31);
-    const yearlyEntries = state.spendingEntries.filter(entry => {
-        const entryDate = new Date(entry.date);
-        return entryDate >= startOfYear && entryDate <= endOfYear;
-    });
-    const yearlyIncome = yearlyEntries
-        .filter(entry => entry.type === "Income")
-        .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-    const yearlyExpenses = yearlyEntries
-        .filter(entry => entry.type === "Expense")
-        .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-    const yearlyRow = document.createElement("tr");
-    yearlyRow.innerHTML = `
-        <td>${yearlyIncome.toFixed(2)}</td>
-        <td>${yearlyExpenses.toFixed(2)}</td>
-        <td>${(yearlyIncome - yearlyExpenses).toFixed(2)}</td>
-    `;
-    yearlySummary.appendChild(yearlyRow);
-
-    // Charts
-    if (categoryPieChart) categoryPieChart.destroy();
-    if (monthlyTrendsChart) monthlyTrendsChart.destroy();
-
-    const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
-    const chartTextColor = isDarkMode ? "#f8f9fa" : "#212529";
-    const chartBgColor = isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
-
-    // Category-wise Expenses (Pie Chart)
-    const categoryExpenses = {};
-    state.spendingEntries
-        .filter(entry => entry.type === "Expense")
-        .forEach(entry => {
-            const amount = convertToDefaultCurrency(entry.amount, entry.currency);
-            categoryExpenses[entry.category] = (categoryExpenses[entry.category] || 0) + amount;
-        });
-    categoryPieChart = new Chart(document.getElementById("categoryPieChart"), {
-        type: "pie",
-        data: {
-            labels: Object.keys(categoryExpenses),
-            datasets: [{
-                data: Object.values(categoryExpenses),
-                backgroundColor: Object.keys(categoryExpenses).map((_, i) =>
-                    `hsl(${(i * 360 / Object.keys(categoryExpenses).length) % 360}, 70%, ${isDarkMode ? 60 : 50}%)`
-                ),
-            }]
-        },
-        options: {
-            plugins: {
-                legend: {
-                    labels: { color: chartTextColor }
-                },
-                title: {
-                    display: true,
-                    text: getTranslation("categoryWiseExpenses"),
-                    color: chartTextColor
-                }
-            }
-        }
-    });
-
-    // Monthly Trends (Line Chart)
-    const monthlyData = {};
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-    for (let i = 0; i < 6; i++) {
-        const monthDate = new Date(sixMonthsAgo.getFullYear(), sixMonthsAgo.getMonth() + i, 1);
-        const monthKey = monthDate.toLocaleString('default', { month: 'short', year: 'numeric' });
-        monthlyData[monthKey] = { income: 0, expenses: 0 };
-    }
-    state.spendingEntries.forEach(entry => {
-        const entryDate = new Date(entry.date);
-        if (entryDate >= sixMonthsAgo) {
-            const monthKey = entryDate.toLocaleString('default', { month: 'short', year: 'numeric' });
-            if (monthlyData[monthKey]) {
-                const amount = convertToDefaultCurrency(entry.amount, entry.currency);
-                if (entry.type === "Income") {
-                    monthlyData[monthKey].income += amount;
-                } else {
-                    monthlyData[monthKey].expenses += amount;
-                }
-            }
-        }
-    });
-    monthlyTrendsChart = new Chart(document.getElementById("monthlyTrendsChart"), {
-        type: "line",
-        data: {
-            labels: Object.keys(monthlyData),
-            datasets: [
-                {
-                    label: getTranslation("incomeLabel"),
-                    data: Object.values(monthlyData).map(d => d.income),
-                    borderColor: isDarkMode ? "#28a745" : "#28a745",
-                    backgroundColor: isDarkMode ? "rgba(40, 167, 69, 0.2)" : "rgba(40, 167, 69, 0.2)",
-                    fill: true
-                },
-                {
-                    label: getTranslation("expenses"),
-                    data: Object.values(monthlyData).map(d => d.expenses),
-                    borderColor: isDarkMode ? "#dc3545" : "#dc3545",
-                    backgroundColor: isDarkMode ? "rgba(220, 53, 69, 0.2)" : "rgba(220, 53, 69, 0.2)",
-                    fill: true
-                }
-            ]
-        },
-        options: {
-            scales: {
-                x: {
-                    title: { display: true, text: "Month", color: chartTextColor },
-                    ticks: { color: chartTextColor }
-                },
-                y: {
-                    title: { display: true, text: "Amount", color: chartTextColor },
-                    ticks: { color: chartTextColor },
-                    beginAtZero: true
-                }
-            },
-            plugins: {
-                legend: {
-                    labels: { color: chartTextColor }
-                },
-                title: {
-                    display: true,
-                    text: getTranslation("monthlyTrends"),
-                    color: chartTextColor
-                }
-            }
-        }
-    });
-
-    const modal = new bootstrap.Modal(document.getElementById("spendingSummaryModal"));
-    modal.show();
-}
-
-function updateCharts() {
-    const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
-    const chartTextColor = isDarkMode ? "#f8f9fa" : "#212529";
-    const chartBgColor = isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
-
-    if (categoryPieChart) {
-        categoryPieChart.data.datasets[0].backgroundColor = state.categories.map((_, i) =>
-            `hsl(${(i * 360 / state.categories.length) % 360}, 70%, ${isDarkMode ? 60 : 50}%)`
-        );
-        categoryPieChart.options.plugins.legend.labels.color = chartTextColor;
-        categoryPieChart.options.plugins.title.color = chartTextColor;
-        categoryPieChart.update();
-    }
-
-    if (monthlyTrendsChart) {
-        monthlyTrendsChart.data.datasets.forEach(dataset => {
-            dataset.borderColor = dataset.label === getTranslation("incomeLabel") ? (isDarkMode ? "#28a745" : "#28a745") : (isDarkMode ? "#dc3545" : "#dc3545");
-            dataset.backgroundColor = dataset.label === getTranslation("incomeLabel") ? (isDarkMode ? "rgba(40, 167, 69, 0.2)" : "rgba(40, 167, 69, 0.2)") : (isDarkMode ? "rgba(220, 53, 69, 0.2)" : "rgba(220, 53, 69, 0.2)");
-        });
-        monthlyTrendsChart.options.scales.x.title.color = chartTextColor;
-        monthlyTrendsChart.options.scales.y.title.color = chartTextColor;
-        monthlyTrendsChart.options.scales.x.ticks.color = chartTextColor;
-        monthlyTrendsChart.options.scales.y.ticks.color = chartTextColor;
-        monthlyTrendsChart.options.plugins.legend.labels.color = chartTextColor;
-        monthlyTrendsChart.options.plugins.title.color = chartTextColor;
-        monthlyTrendsChart.update();
-    }
-}
-
-function showManageEntries() {
-    const entriesList = document.getElementById("spendingEntriesList");
-    entriesList.innerHTML = "";
-
-    const searchQuery = document.getElementById("searchEntries").value.toLowerCase();
-    const filterType = document.getElementById("filterType").value;
-    const filterCategory = document.getElementById("filterCategory").value;
-    const startDate = document.getElementById("filterStartDate").value;
-    const endDate = document.getElementById("filterEndDate").value;
-
-    let filteredEntries = state.spendingEntries.filter(entry => {
-        const matchesSearch = entry.category.toLowerCase().includes(searchQuery) || entry.type.toLowerCase().includes(searchQuery);
-        const matchesType = filterType === "all" || entry.type === filterType;
-        const matchesCategory = filterCategory === "all" || entry.category === filterCategory;
-        const entryDate = new Date(entry.date);
-        const matchesDate = (!startDate || entryDate >= new Date(startDate)) && (!endDate || entryDate <= new Date(endDate));
-        return matchesSearch && matchesType && matchesCategory && matchesDate;
-    });
-
-    filteredEntries.forEach((entry, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${entry.date}</td>
-            <td>${getTranslation(entry.type.toLowerCase())}</td>
-            <td>${entry.category}</td>
-            <td>${convertToDefaultCurrency(entry.amount, entry.currency).toFixed(2)} ${localStorage.getItem("defaultCurrency") || "NRs"}</td>
-            <td>
-                <button class="btn btn-sm btn-primary edit-spending-btn me-1" data-index="${index}" data-translate="edit">Edit</button>
-                <button class="btn btn-sm btn-danger delete-spending-btn" data-index="${index}" data-translate="delete">Delete</button>
-            </td>
-        `;
-        entriesList.appendChild(row);
-    });
-
-    document.querySelectorAll(".edit-spending-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const index = btn.getAttribute("data-index");
-            const entry = state.spendingEntries[index];
-            document.getElementById("editSpendingAmount").value = entry.amount;
-            document.getElementById("editSpendingType").value = entry.type;
-            document.getElementById("editSpendingCategory").value = entry.category;
-            document.getElementById("editSpendingDate").value = entry.date;
-            document.getElementById("editSpendingRecurrence").value = entry.recurrence || "none";
-            document.getElementById("editSpendingCurrency").value = entry.currency;
-            const modal = new bootstrap.Modal(document.getElementById("editSpendingModal"));
-            modal.show();
-
-            document.getElementById("saveEditSpendingBtn").onclick = () => {
-                const amount = parseFloat(document.getElementById("editSpendingAmount").value);
-                if (isNaN(amount) || amount <= 0) {
-                    document.getElementById("editSpendingAmount").classList.add("is-invalid");
-                    return;
-                }
-                state.spendingEntries[index] = {
-                    amount,
-                    type: document.getElementById("editSpendingType").value,
-                    category: document.getElementById("editSpendingCategory").value,
-                    date: document.getElementById("editSpendingDate").value,
-                    recurrence: document.getElementById("editSpendingRecurrence").value,
-                    currency: document.getElementById("editSpendingCurrency").value,
-                    recurring: document.getElementById("editSpendingRecurrence").value !== "none"
-                };
+    /**
+     * Deletes a spending entry.
+     */
+    window.deleteSpendingEntry = function(index) {
+        if (confirm("Are you sure you want to delete this spending entry?")) {
+            try {
+                state.spendingEntries.splice(index, 1);
                 saveSpendingEntries();
                 showManageEntries();
-                populateCategoryDropdowns();
-                modal.hide();
-            };
-        });
-    });
-
-    document.querySelectorAll(".delete-spending-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const index = btn.getAttribute("data-index");
-            state.spendingEntries.splice(index, 1);
-            saveSpendingEntries();
-            showManageEntries();
-        });
-    });
-
-    const modal = new bootstrap.Modal(document.getElementById("manageEntriesModal"));
-    modal.show();
-}
-
-function addSpendingEntry() {
-    const amountInput = document.getElementById("spendingAmount");
-    const amount = parseFloat(amountInput.value);
-    if (isNaN(amount) || amount <= 0) {
-        amountInput.classList.add("is-invalid");
-        return;
-    }
-    amountInput.classList.remove("is-invalid");
-
-    const entry = {
-        amount,
-        type: document.getElementById("spendingType").value,
-        category: document.getElementById("spendingCategory").value,
-        date: document.getElementById("spendingDate").value,
-        recurrence: document.getElementById("spendingRecurrence").value,
-        currency: document.getElementById("spendingCurrency").value,
-        recurring: document.getElementById("spendingRecurrence").value !== "none"
+                alert("Spending entry deleted successfully!");
+            } catch (e) {
+                console.error("Failed to delete spending entry:", e);
+                alert("Failed to delete spending entry. Please try again.");
+            }
+        }
     };
 
-    try {
-        state.spendingEntries.push(entry);
+    /**
+     * Stops recurrence for a spending entry.
+     */
+    window.stopRecurrence = function(index) {
+        state.spendingEntries[index].recurring = false;
+        state.spendingEntries[index].recurrence = "none";
         saveSpendingEntries();
-        checkBudgetAlerts(entry.category);
-        amountInput.value = "";
-        document.getElementById("spendingRecurrence").value = "none";
-    } catch (e) {
-        console.error("Failed to add spending entry:", e);
-        alert("Failed to add spending entry. Please try again.");
+        showManageEntries();
+    };
+
+    /**
+     * Exports spending entries to an Excel file.
+     */
+    function exportSpendingToExcel() {
+        if (state.spendingEntries.length === 0) {
+            alert("No spending entries to export.");
+            return;
+        }
+        try {
+            const defaultCurrency = localStorage.getItem("defaultCurrency") || "NRs";
+            const worksheet = XLSX.utils.json_to_sheet(state.spendingEntries.map(entry => ({
+                Date: entry.date,
+                Type: entry.type,
+                Category: entry.category,
+                Amount: convertToDefaultCurrency(entry.amount, entry.currency),
+                Currency: defaultCurrency,
+                OriginalAmount: entry.amount,
+                OriginalCurrency: entry.currency
+            })));
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Spending Entries");
+            XLSX.writeFile(workbook, "Spending_Entries.xlsx");
+        } catch (e) {
+            console.error("Export failed:", e);
+            alert("Failed to export spending entries. Please try again.");
+        }
     }
-}
 
-function exportSpendingToExcel() {
-    try {
-        const data = state.spendingEntries.map(entry => ({
-            Date: entry.date,
-            Type: getTranslation(entry.type.toLowerCase()),
-            Category: entry.category,
-            Amount: convertToDefaultCurrency(entry.amount, entry.currency).toFixed(2),
-            Currency: localStorage.getItem("defaultCurrency") || "NRs",
-            Recurrence: entry.recurrence
-        }));
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Spending");
-        XLSX.writeFile(wb, "Spending_Entries.xlsx");
-    } catch (e) {
-        console.error("Excel export failed:", e);
-        alert("Failed to export to Excel. Please try again.");
-    }
-}
+    /**
+     * Exports spending summaries to a PDF.
+     */
+    function exportSpendingToPDF() {
+        try {
+            const doc = new jsPDF();
+            doc.text(getTranslation("viewSummary"), 10, 10);
+            let y = 20;
 
-function exportSpendingToPDF() {
-    try {
-        const doc = new jsPDF();
-        doc.setFontSize(16);
-        doc.text(getTranslation("viewSummary"), 10, 10);
-        let y = 20;
-
-        // Budget Overview
-        doc.setFontSize(12);
-        doc.text(getTranslation("budgetTitle"), 10, y);
-        y += 10;
-        if (Object.keys(state.budgets).length === 0) {
-            doc.text(getTranslation("noBudgetSet"), 10, y);
+            // Budget Overview
+            doc.text(getTranslation("budgetTitle"), 10, y);
             y += 10;
-        } else {
             Object.keys(state.budgets).forEach(category => {
                 const spent = calculateMonthlyExpenses(category);
                 doc.text(`${getTranslation("budgetFor")} ${category}: ${state.budgets[category].toFixed(2)} ${localStorage.getItem("defaultCurrency") || "NRs"} (Spent: ${spent.toFixed(2)})`, 10, y);
                 y += 10;
             });
-        }
-        y += 10;
+            if (Object.keys(state.budgets).length === 0) {
+                doc.text(getTranslation("noBudgetSet"), 10, y);
+                y += 10;
+            }
+            y += 10;
 
-        // Weekly Summary
-        doc.text(getTranslation("weeklySummary"), 10, y);
-        y += 10;
-        const weeklyData = [];
-        const weeklyRows = document.getElementById("weeklySummary").children;
-        for (let row of weeklyRows) {
-            const cells = row.children;
-            weeklyData.push([
-                cells[0].textContent,
-                cells[1].textContent,
-                cells[2].textContent,
-                cells[3].textContent
-            ]);
+            // Weekly Summary
+            doc.text(getTranslation("weeklySummary"), 10, y);
+            y += 10;
+            const weeklyTable = document.getElementById("weeklySummary").innerHTML;
+            doc.html(`<table>${weeklyTable}</table>`, { x: 10, y: y });
+            y += 50;
+
+            // Monthly Summary
+            doc.text(getTranslation("monthlySummary"), 10, y);
+            y += 10;
+            const monthlyTable = document.getElementById("monthlySummary").innerHTML;
+            doc.html(`<table>${monthlyTable}</table>`, { x: 10, y: y });
+            y += 30;
+
+            // Yearly Summary
+            doc.text(getTranslation("yearlySummary"), 10, y);
+            y += 10;
+            const yearlyTable = document.getElementById("yearlySummary").innerHTML;
+            doc.html(`<table>${yearlyTable}</table>`, { x: 10, y: y });
+
+            doc.save("Spending_Summary.pdf");
+        } catch (e) {
+            console.error("PDF export failed:", e);
+            alert("Failed to export to PDF. Please try again.");
         }
-        doc.autoTable({
-            startY: y,
-            head: [[getTranslation("day"), getTranslation("incomeLabel"), getTranslation("expenses"), getTranslation("balance")]],
-            body: weeklyData
-        });
-        y = doc.lastAutoTable.finalY + 10;
+    }
+
+    /**
+     * Calculates monthly expenses for a category.
+     */
+    function calculateMonthlyExpenses(category) {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        return state.spendingEntries
+            .filter(entry => {
+                const entryDate = new Date(entry.date);
+                return entry.type === "Expense" &&
+                       entry.category === category &&
+                       entryDate >= monthStart &&
+                       entryDate <= monthEnd;
+            })
+            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+    }
+
+    /**
+     * Updates charts based on the current theme.
+     */
+    function updateCharts() {
+        const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
+        const chartTextColor = isDarkMode ? "#f8f9fa" : "#212529";
+        const chartBgColor = isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
+
+        if (categoryPieChart) {
+            categoryPieChart.data.datasets[0].backgroundColor = state.categories.map((_, i) =>
+                `hsl(${(i * 360 / state.categories.length) % 360}, 70%, ${isDarkMode ? 60 : 50}%)`
+            );
+            categoryPieChart.options.plugins.legend.labels.color = chartTextColor;
+            categoryPieChart.options.plugins.title.color = chartTextColor;
+            categoryPieChart.update();
+        }
+
+        if (monthlyTrendsChart) {
+            monthlyTrendsChart.data.datasets.forEach(dataset => {
+                dataset.borderColor = dataset.label === getTranslation("incomeLabel") ? (isDarkMode ? "#28a745" : "#28a745") : (isDarkMode ? "#dc3545" : "#dc3545");
+                dataset.backgroundColor = dataset.label === getTranslation("incomeLabel") ? (isDarkMode ? "rgba(40, 167, 69, 0.2)" : "rgba(40, 167, 69, 0.2)") : (isDarkMode ? "rgba(220, 53, 69, 0.2)" : "rgba(220, 53, 69, 0.2)");
+            });
+            monthlyTrendsChart.options.scales.x.title.color = chartTextColor;
+            monthlyTrendsChart.options.scales.y.title.color = chartTextColor;
+            monthlyTrendsChart.options.scales.x.ticks.color = chartTextColor;
+            monthlyTrendsChart.options.scales.y.ticks.color = chartTextColor;
+            monthlyTrendsChart.options.plugins.legend.labels.color = chartTextColor;
+            monthlyTrendsChart.options.plugins.title.color = chartTextColor;
+            monthlyTrendsChart.options.elements.line.backgroundColor = chartBgColor;
+            monthlyTrendsChart.update();
+        }
+    }
+
+    /**
+     * Shows the spending summary modal with weekly, monthly, yearly summaries, budgets, and charts.
+     */
+    function showSpendingSummary() {
+        bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal"))?.hide();
+        const now = new Date();
+        const defaultCurrency = localStorage.getItem("defaultCurrency") || "NRs";
+
+        // Budget Overview
+        const budgetOverview = document.getElementById("budgetOverview");
+        budgetOverview.innerHTML = "";
+        if (Object.keys(state.budgets).length === 0) {
+            budgetOverview.innerHTML = `<p>${getTranslation("noBudgetSet")}</p>`;
+        } else {
+            Object.keys(state.budgets).forEach(category => {
+                const spent = calculateMonthlyExpenses(category);
+                const budget = state.budgets[category];
+                const percentage = (spent / budget) * 100;
+                const div = document.createElement("div");
+                div.innerHTML = `
+                    <p>${getTranslation("budgetFor")} ${category}: ${budget.toFixed(2)} ${defaultCurrency}</p>
+                    <div class="progress">
+                        <div class="progress-bar ${percentage > 100 ? 'bg-danger' : percentage > 80 ? 'bg-warning' : 'bg-success'}" role="progressbar" style="width: ${Math.min(percentage, 100)}%" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100">${spent.toFixed(2)} (${percentage.toFixed(1)}%)</div>
+                    </div>
+                `;
+                budgetOverview.appendChild(div);
+            });
+        }
+
+        // Weekly Summary by Day
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        const weeklySummaryTable = document.getElementById("weeklySummary");
+        weeklySummaryTable.innerHTML = "";
+        const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(weekStart);
+            currentDay.setDate(weekStart.getDate() + i);
+            const dayString = currentDay.toISOString().split("T")[0];
+            const dayEntries = state.spendingEntries.filter(entry => entry.date === dayString);
+            const income = dayEntries
+                .filter(entry => entry.type === "Income")
+                .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+            const expenses = dayEntries
+                .filter(entry => entry.type === "Expense")
+                .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+            const balance = income - expenses;
+
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${days[i]} (${dayString})</td>
+                <td>${income.toFixed(2)} ${defaultCurrency}</td>
+                <td>${expenses.toFixed(2)} ${defaultCurrency}</td>
+                <td>${balance.toFixed(2)} ${defaultCurrency}</td>
+            `;
+            weeklySummaryTable.appendChild(row);
+        }
 
         // Monthly Summary
-        doc.text(getTranslation("monthlySummary"), 10, y);
-        y += 10;
-        const monthlyData = [];
-        const monthlyRows = document.getElementById("monthlySummary").children;
-        for (let row of monthlyRows) {
-            const cells = row.children;
-            monthlyData.push([
-                cells[0].textContent,
-                cells[1].textContent,
-                cells[2].textContent
-            ]);
-        }
-        doc.autoTable({
-            startY: y,
-            head: [[getTranslation("totalIncome"), getTranslation("totalExpenses"), getTranslation("netBalance")]],
-            body: monthlyData
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const monthlyEntries = state.spendingEntries.filter(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate >= monthStart && entryDate <= monthEnd;
         });
-        y = doc.lastAutoTable.finalY + 10;
+        const monthlyIncome = monthlyEntries
+            .filter(entry => entry.type === "Income")
+            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+        const monthlyExpenses = monthlyEntries
+            .filter(entry => entry.type === "Expense")
+            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+        document.getElementById("monthlySummary").innerHTML = `
+            <tr>
+                <td>${monthlyIncome.toFixed(2)} ${defaultCurrency}</td>
+                <td>${monthlyExpenses.toFixed(2)} ${defaultCurrency}</td>
+                <td>${(monthlyIncome - monthlyExpenses).toFixed(2)} ${defaultCurrency}</td>
+            </tr>
+        `;
 
         // Yearly Summary
-        doc.text(getTranslation("yearlySummary"), 10, y);
-        y += 10;
-        const yearlyData = [];
-        const yearlyRows = document.getElementById("yearlySummary").children;
-        for (let row of yearlyRows) {
-            const cells = row.children;
-            yearlyData.push([
-                cells[0].textContent,
-                cells[1].textContent,
-                cells[2].textContent
-            ]);
-        }
-        doc.autoTable({
-            startY: y,
-            head: [[getTranslation("totalIncome"), getTranslation("totalExpenses"), getTranslation("netBalance")]],
-            body: yearlyData
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const yearEnd = new Date(now.getFullYear(), 11, 31);
+        const yearlyEntries = state.spendingEntries.filter(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate >= yearStart && entryDate <= yearEnd;
         });
-
-        doc.save("Spending_Summary.pdf");
-    } catch (e) {
-        console.error("PDF export failed:", e);
-        alert("Failed to export to PDF. Please try again.");
-    }
-}
-
-function openSetBudgetModal() {
-    const budgetInputs = document.getElementById("budgetInputs");
-    budgetInputs.innerHTML = `<p data-translate="budgetOptional">${getTranslation("budgetOptional")}</p>`;
-    state.categories.forEach(category => {
-        const div = document.createElement("div");
-        div.className = "mb-3";
-        div.innerHTML = `
-            <label for="budget-${category}" class="form-label">${getTranslation("budgetFor")} ${category}</label>
-            <input type="number" id="budget-${category}" class="form-control" value="${state.budgets[category] || ''}" min="0" step="0.01" placeholder="Enter budget for ${category}">
+        const yearlyIncome = yearlyEntries
+            .filter(entry => entry.type === "Income")
+            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+        const yearlyExpenses = yearlyEntries
+            .filter(entry => entry.type === "Expense")
+            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+        document.getElementById("yearlySummary").innerHTML = `
+            <tr>
+                <td>${yearlyIncome.toFixed(2)} ${defaultCurrency}</td>
+                <td>${yearlyExpenses.toFixed(2)} ${defaultCurrency}</td>
+                <td>${(yearlyIncome - yearlyExpenses).toFixed(2)} ${defaultCurrency}</td>
+            </tr>
         `;
-        budgetInputs.appendChild(div);
-    });
-    const modal = new bootstrap.Modal(document.getElementById("setBudgetModal"));
-    modal.show();
-}
 
-function saveBudgets() {
-    state.categories.forEach(category => {
-        const budgetInput = document.getElementById(`budget-${category}`);
-        const budgetValue = parseFloat(budgetInput.value);
-        if (!isNaN(budgetValue) && budgetValue > 0) {
-            state.budgets[category] = budgetValue;
-        } else {
-            delete state.budgets[category];
-        }
-    });
-    localStorage.setItem("spendingBudgets", minifyJSON(state.budgets));
-    const modal = bootstrap.Modal.getInstance(document.getElementById("setBudgetModal"));
-    modal.hide();
-}
-
-function openManageCategoriesModal() {
-    populateCategoryList();
-    const modal = new bootstrap.Modal(document.getElementById("manageCategoriesModal"));
-    modal.show();
-}
-
-function populateCategoryList() {
-    const categoryList = document.getElementById("categoryList");
-    categoryList.innerHTML = "";
-    state.categories.forEach(category => {
-        if (defaultCategories.includes(category)) return;
-        const li = document.createElement("li");
-        li.className = "list-group-item d-flex justify-content-between align-items-center";
-        li.innerHTML = `
-            ${category}
-            <button class="btn btn-sm btn-danger delete-category-btn" data-category="${category}" data-translate="delete">Delete</button>
-        `;
-        categoryList.appendChild(li);
-    });
-
-    document.querySelectorAll(".delete-category-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const category = btn.getAttribute("data-category");
-            state.categories = state.categories.filter(cat => cat !== category);
-            state.spendingEntries.forEach(entry => {
-                if (entry.category === category) {
-                    entry.category = "Other";
-                }
-            });
-            state.shoppingItems.forEach(item => {
-                if (item.category === category) {
-                    item.category = "Other";
-                }
-            });
-            delete state.budgets[category];
-            saveCategories();
-            saveSpendingEntries();
-            saveShoppingItems();
-            localStorage.setItem("spendingBudgets", minifyJSON(state.budgets));
-            populateCategoryList();
+        // Category-wise Expenses Pie Chart
+        const categoryExpenses = {};
+        state.categories.forEach(category => {
+            categoryExpenses[category] = monthlyEntries
+                .filter(entry => entry.type === "Expense" && entry.category === category)
+                .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
         });
-    });
-}
-
-function addCategory() {
-    const newCategoryInput = document.getElementById("newCategoryInput");
-    const newCategory = DOMPurify.sanitize(newCategoryInput.value.trim());
-    if (!newCategory) {
-        newCategoryInput.classList.add("is-invalid");
-        return;
-    }
-    if (state.categories.includes(newCategory)) {
-        alert("Category already exists.");
-        return;
-    }
-    state.categories.push(newCategory);
-    saveCategories();
-    populateCategoryList();
-    newCategoryInput.value = "";
-    newCategoryInput.classList.remove("is-invalid");
-}
-
-function openShoppingListModal() {
-    displayShoppingItems();
-    const modal = new bootstrap.Modal(document.getElementById("shoppingListModal"));
-    modal.show();
-}
-
-function addShoppingItem() {
-    const itemNameInput = document.getElementById("shoppingItemName");
-    const itemName = DOMPurify.sanitize(itemNameInput.value.trim());
-    const category = DOMPurify.sanitize(document.getElementById("shoppingItemCategory").value);
-    const quantity = parseInt(document.getElementById("shoppingItemQuantity").value);
-
-    if (!itemName) {
-        itemNameInput.classList.add("is-invalid");
-        return;
-    }
-    itemNameInput.classList.remove("is-invalid");
-
-    try {
-        state.shoppingItems.push({
-            name: itemName,
-            category,
-            quantity,
-            purchased: false
-        });
-        saveShoppingItems();
-        displayShoppingItems();
-        document.getElementById("shoppingItemName").value = "";
-        document.getElementById("shoppingItemCategory").value = "Food";
-        document.getElementById("shoppingItemQuantity").value = 1;
-    } catch (e) {
-        console.error("Failed to add shopping item:", e);
-        alert("Failed to add shopping item. Please try again.");
-    }
-}
-
-function displayShoppingItems() {
-    const shoppingListItems = document.getElementById("shoppingListItems");
-    shoppingListItems.innerHTML = "";
-
-    const searchQuery = document.getElementById("searchShoppingItems").value.toLowerCase();
-    const filterCategory = document.getElementById("filterShoppingCategory").value;
-    const filterPurchased = document.getElementById("filterPurchased").value;
-
-    let filteredItems = state.shoppingItems.filter(item => {
-        const matchesSearch = item.name.toLowerCase().includes(searchQuery);
-        const matchesCategory = filterCategory === "all" || item.category === filterCategory;
-        const matchesPurchased = filterPurchased === "all" ||
-                                 (filterPurchased === "purchased" && item.purchased) ||
-                                 (filterPurchased === "not-purchased" && !item.purchased);
-        return matchesSearch && matchesCategory && matchesPurchased;
-    });
-
-    filteredItems.forEach((item, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td class="${item.purchased ? 'shopping-item-purchased' : ''}">${item.name}</td>
-            <td>${item.category}</td>
-            <td>${item.quantity}</td>
-            <td>${item.purchased ? getTranslation("purchased") : getTranslation("notPurchased")}</td>
-            <td>
-                <button class="btn btn-sm btn-primary edit-shopping-btn me-1" data-index="${index}" data-translate="edit">Edit</button>
-                <button class="btn btn-sm btn-success purchase-shopping-btn me-1" data-index="${index}" data-translate="${item.purchased ? 'notPurchased' : 'purchased'}">${item.purchased ? 'Unmark' : 'Mark Purchased'}</button>
-                <button class="btn btn-sm btn-danger delete-shopping-btn" data-index="${index}" data-translate="delete">Delete</button>
-            </td>
-        `;
-        shoppingListItems.appendChild(row);
-    });
-
-    document.querySelectorAll(".edit-shopping-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const index = btn.getAttribute("data-index");
-            const item = state.shoppingItems[index];
-            document.getElementById("editShoppingItemName").value = item.name;
-            document.getElementById("editShoppingItemCategory").value = item.category;
-            document.getElementById("editShoppingItemQuantity").value = item.quantity;
-            document.getElementById("editShoppingItemPurchased").checked = item.purchased;
-            const modal = new bootstrap.Modal(document.getElementById("editShoppingItemModal"));
-            modal.show();
-
-            document.getElementById("saveEditShoppingItemBtn").onclick = () => saveEditedShoppingItem(index, modal);
-        });
-    });
-
-    document.querySelectorAll(".purchase-shopping-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const index = btn.getAttribute("data-index");
-            const item = state.shoppingItems[index];
-            if (!item.purchased) {
-                document.getElementById("purchaseItemInfo").textContent = `Add expense for ${item.name} (${item.quantity} units)`;
-                const purchaseModal = new bootstrap.Modal(document.getElementById("addPurchaseExpenseModal"));
-                purchaseModal.show();
-
-                document.getElementById("confirmPurchaseBtn").onclick = () => {
-                    const amountInput = document.getElementById("purchaseAmount");
-                    const amount = parseFloat(amountInput.value);
-                    if (isNaN(amount) || amount <= 0) {
-                        amountInput.classList.add("is-invalid");
-                        return;
+        const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
+        if (categoryPieChart) categoryPieChart.destroy();
+        categoryPieChart = new Chart(document.getElementById("categoryPieChart"), {
+            type: 'pie',
+            data: {
+                labels: state.categories,
+                datasets: [{
+                    data: state.categories.map(cat => categoryExpenses[cat]),
+                    backgroundColor: state.categories.map((_, i) => `hsl(${(i * 360 / state.categories.length) % 360}, 70%, ${isDarkMode ? 60 : 50}%)`)
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: isDarkMode ? "#f8f9fa" : "#212529"
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: getTranslation("categoryWiseExpenses"),
+                        color: isDarkMode ? "#f8f9fa" : "#212529"
                     }
-                    state.spendingEntries.push({
-                        amount,
-                        type: "Expense",
-                        category: item.category,
-                        date: new Date().toISOString().split("T")[0],
-                        recurrence: "none",
-                        currency: localStorage.getItem("defaultCurrency") || "NRs",
-                        recurring: false
-                    });
-                    item.purchased = true;
-                    saveSpendingEntries();
-                    saveShoppingItems();
-                    checkBudgetAlerts(item.category);
-                    displayShoppingItems();
-                    purchaseModal.hide();
-                };
-            } else {
-                item.purchased = false;
-                saveShoppingItems();
-                displayShoppingItems();
+                }
             }
         });
-    });
 
-    document.querySelectorAll(".delete-shopping-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const index = btn.getAttribute("data-index");
-            state.shoppingItems.splice(index, 1);
-            saveShoppingItems();
-            displayShoppingItems();
-        });
-    });
-}
-
-function saveEditedShoppingItem(index, modal) {
-    const itemNameInput = document.getElementById("editShoppingItemName");
-    const itemName = DOMPurify.sanitize(itemNameInput.value.trim());
-    if (!itemName) {
-        itemNameInput.classList.add("is-invalid");
-        return;
-    }
-    itemNameInput.classList.remove("is-invalid");
-
-    state.shoppingItems[index] = {
-        name: itemName,
-        category: document.getElementById("editShoppingItemCategory").value,
-        quantity: parseInt(document.getElementById("editShoppingItemQuantity").value),
-        purchased: document.getElementById("editShoppingItemPurchased").checked
-    };
-    saveShoppingItems();
-    displayShoppingItems();
-    modal.hide();
-}
-
-function requestNotificationPermission() {
-    if ('Notification' in window) {
-        if (Notification.permission === 'granted') {
-            alert(getTranslation("notificationsEnabled") || "Notifications are already enabled.");
-            return;
+        // Monthly Trends Line Chart (Last 6 Months)
+        const months = [];
+        const incomes = [];
+        const expenses = [];
+        for (let i = 5; i >= 0; i--) {
+            const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+            const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+            const monthEntries = state.spendingEntries.filter(entry => {
+                const entryDate = new Date(entry.date);
+                return entryDate >= monthStart && entryDate <= monthEnd;
+            });
+            months.push(monthDate.toLocaleString('default', { month: 'short', year: 'numeric' }));
+            incomes.push(monthEntries
+                .filter(entry => entry.type === "Income")
+                .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0));
+            expenses.push(monthEntries
+                .filter(entry => entry.type === "Expense")
+                .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0));
         }
-        if (Notification.permission === 'denied') {
-            alert(getTranslation("notificationsDenied") || "Notification permission was denied. Please enable it in your browser settings.");
-            return;
-        }
-        Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-                alert(getTranslation("notificationsEnabled") || "Notification permission granted.");
-            } else {
-                console.log("Notification permission denied. Falling back to alerts.");
-                alert(getTranslation("notificationsDenied") || "Notification permission denied. Falling back to alerts.");
+        if (monthlyTrendsChart) monthlyTrendsChart.destroy();
+        monthlyTrendsChart = new Chart(document.getElementById("monthlyTrendsChart"), {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: getTranslation("incomeLabel"),
+                        data: incomes,
+                        borderColor: isDarkMode ? "#28a745" : "#28a745",
+                        backgroundColor: isDarkMode ? "rgba(40, 167, 69, 0.2)" : "rgba(40, 167, 69, 0.2)",
+                        fill: true
+                    },
+                    {
+                        label: getTranslation("expenses"),
+                        data: expenses,
+borderColor: isDarkMode ? "#dc3545" : "#dc3545",
+                        backgroundColor: isDarkMode ? "rgba(220, 53, 69, 0.2)" : "rgba(220, 53, 69, 0.2)",
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: isDarkMode ? "#f8f9fa" : "#212529"
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: getTranslation("monthlyTrends"),
+                        color: isDarkMode ? "#f8f9fa" : "#212529"
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Months',
+                            color: isDarkMode ? "#f8f9fa" : "#212529"
+                        },
+                        ticks: {
+                            color: isDarkMode ? "#f8f9fa" : "#212529"
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: `Amount (${defaultCurrency})`,
+                            color: isDarkMode ? "#f8f9fa" : "#212529"
+                        },
+                        ticks: {
+                            color: isDarkMode ? "#f8f9fa" : "#212529"
+                        },
+                        beginAtZero: true
+                    }
+                },
+                elements: {
+                    line: {
+                        backgroundColor: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"
+                    }
+                }
             }
-        }).catch(err => {
-            console.error("Failed to request notification permission:", err);
-            alert("Failed to request notification permission. Please try again.");
         });
-    } else {
-        alert("Notifications are not supported in this browser.");
-    }
-}
 
-function initializeEventListeners() {
-    document.getElementById("spendingTrackerBtn").addEventListener("click", openSpendingTrackerModal);
-    document.getElementById("addIncomeBtn").addEventListener("click", () => openSpendingTrackerModal("Income"));
-    document.getElementById("addExpenseBtn").addEventListener("click", () => openSpendingTrackerModal("Expense"));
-    document.getElementById("summaryReportBtn").addEventListener("click", showSpendingSummary);
-    document.getElementById("exportExcelBtn").addEventListener("click", exportSpendingToExcel);
-    document.getElementById("exportPDFBtn").addEventListener("click", exportSpendingToPDF);
-    document.getElementById("addSpendingBtn").addEventListener("click", addSpendingEntry);
-    document.getElementById("viewSummaryBtn").addEventListener("click", showSpendingSummary);
-    document.getElementById("manageEntriesBtn").addEventListener("click", showManageEntries);
-    document.getElementById("setBudgetBtn").addEventListener("click", openSetBudgetModal);
-    document.getElementById("manageCategoriesBtn").addEventListener("click", openManageCategoriesModal);
-    document.getElementById("shoppingListBtn").addEventListener("click", openShoppingListModal);
-    document.getElementById("addShoppingItemBtn").addEventListener("click", addShoppingItem);
-    document.getElementById("saveEditShoppingItemBtn").addEventListener("click", saveEditedShoppingItem);
-    document.getElementById("confirmPurchaseBtn").addEventListener("click", confirmPurchase);
-    document.getElementById("exportSpendingExcelBtn").addEventListener("click", exportSpendingToExcel);
-    document.getElementById("exportSpendingPDFBtn").addEventListener("click", exportSpendingToPDF);
-    document.getElementById("saveEditSpendingBtn").addEventListener("click", saveEditedSpendingEntry);
-    document.getElementById("saveBudgetBtn").addEventListener("click", saveBudgets);
-    document.getElementById("addCategoryBtn").addEventListener("click", addCategory);
-    document.getElementById("requestNotificationBtn").addEventListener("click", () => {
-        requestNotificationPermission();
-    });
-    document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
-    document.getElementById("languageToggle").addEventListener("change", () => {
-        const lang = document.getElementById("languageToggle").value;
-        localStorage.setItem("selectedLanguage", lang);
         applyTranslations();
-        populateCategoryDropdowns();
-        showManageEntries();
-        showSpendingSummary();
-        displayShoppingItems();
-    });
-    document.getElementById("currencyToggle").addEventListener("change", () => {
-        const currency = document.getElementById("currencyToggle").value;
-        localStorage.setItem("defaultCurrency", currency);
-        showManageEntries();
-        showSpendingSummary();
-        displayShoppingItems();
-    });
-    document.getElementById("searchEntries").addEventListener("input", debounce(() => {
-        showManageEntries();
-    }, 300));
-    document.getElementById("filterType").addEventListener("change", showManageEntries);
-    document.getElementById("filterCategory").addEventListener("change", showManageEntries);
-    document.getElementById("filterStartDate").addEventListener("change", showManageEntries);
-    document.getElementById("filterEndDate").addEventListener("change", showManageEntries);
-    document.getElementById("searchShoppingItems").addEventListener("input", debounce(displayShoppingItems, 300));
-    document.getElementById("filterShoppingCategory").addEventListener("change", displayShoppingItems);
-    document.getElementById("filterPurchased").addEventListener("change", displayShoppingItems);
-
-    document.querySelectorAll(".btn").forEach(btn => {
-        btn.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-                btn.click();
-                e.preventDefault();
-            }
-        });
-    });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    try {
-        const storedSpending = localStorage.getItem("spendingEntries");
-        if (storedSpending) {
-            state.spendingEntries = parseMinifiedJSON(storedSpending);
-        }
-        const storedShoppingItems = localStorage.getItem("shoppingItems");
-        if (storedShoppingItems) {
-            state.shoppingItems = parseMinifiedJSON(storedShoppingItems);
-        }
-        const storedBudgets = localStorage.getItem("spendingBudgets");
-        if (storedBudgets) {
-            state.budgets = parseMinifiedJSON(storedBudgets);
-        }
-        const storedCategories = localStorage.getItem("spendingCategories");
-        if (storedCategories) {
-            const customCategories = parseMinifiedJSON(storedCategories);
-            state.categories = [...defaultCategories, ...customCategories];
-        }
-        const storedLanguage = localStorage.getItem("selectedLanguage");
-        if (storedLanguage) {
-            document.getElementById("languageToggle").value = storedLanguage;
-        }
-        const storedCurrency = localStorage.getItem("defaultCurrency");
-        if (storedCurrency) {
-            document.getElementById("currencyToggle").value = storedCurrency;
-        }
-    } catch (e) {
-        console.error("Failed to load data:", e);
-        alert("Unable to load data. Please check your browser settings.");
+        new bootstrap.Modal(document.getElementById("spendingSummaryModal")).show();
     }
-    document.getElementById("spendingDate").value = new Date().toISOString().split("T")[0];
-    applyTheme();
-    updateCharts();
-    applyTranslations();
-    initializeEventListeners();
-    populateCategoryDropdowns();
-    checkRecurringEntries();
-});
+
+    // Expose functions to global scope for inline event handlers
+    window.editSpendingEntry = editSpendingEntry;
+    window.deleteSpendingEntry = deleteSpendingEntry;
+    window.stopRecurrence = stopRecurrence;
+})();
+    </script>
+</body>
+</html>
