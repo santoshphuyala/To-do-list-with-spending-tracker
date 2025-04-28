@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-translate="todoList">Todo List</title>
+    <title>Todo List and Spending Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
             --background-color: #f8f9fa;
@@ -13,12 +14,8 @@
             --border-color: #dee2e6;
             --button-bg: #0d6efd;
             --button-text: #ffffff;
-            --completed-text: gray;
-            --high-bg: #dc3545;
-            --medium-bg: #ffc107;
-            --low-bg: #28a745;
-            --modal-bg: #ffffff;
-            --modal-text: #212529;
+            --button-hover-bg: #0056b3;
+            --button-active-bg: #004085;
         }
         [data-theme="dark"] {
             --background-color: #212529;
@@ -27,863 +24,208 @@
             --border-color: #495057;
             --button-bg: #0d6efd;
             --button-text: #ffffff;
-            --completed-text: #adb5bd;
-            --high-bg: #dc3545;
-            --medium-bg: #ffc107;
-            --low-bg: #28a745;
-            --modal-bg: #343a40;
-            --modal-text: #f8f9fa;
+            --button-hover-bg: #1a73e8;
+            --button-active-bg: #1557b0;
         }
         body {
             background-color: var(--background-color);
             color: var(--text-color);
             transition: all 0.3s ease;
+            font-family: 'Arial', sans-serif;
         }
-        .container, .list-group-item, .modal-content {
+        .container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .nav-tabs {
+            border-bottom: 2px solid var(--border-color);
+        }
+        .nav-link {
+            color: var(--text-color);
+            border-radius: 10px 10px 0 0;
+            transition: background-color 0.3s ease;
+        }
+        .nav-link.active {
             background-color: var(--card-bg);
             color: var(--text-color);
             border-color: var(--border-color);
+            border-bottom: none;
         }
-        .modal-content {
-            background-color: var(--modal-bg);
-            color: var(--modal-text);
+        .nav-link:hover {
+            background-color: var(--border-color);
         }
-        .completed { text-decoration: line-through; color: var(--completed-text); }
-        .high { background-color: var(--high-bg); color: white; }
-        .medium { background-color: var(--medium-bg); color: black; }
-        .low { background-color: var(--low-bg); color: white; }
-        .notes-collapse { max-height: 100px; overflow-y: auto; }
-        .btn-primary, .btn-info, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
+        .btn-primary {
             background-color: var(--button-bg);
             color: var(--button-text);
+            border-radius: 25px;
+            padding: 8px 20px;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+        .btn-primary:hover {
+            background-color: var(--button-hover-bg);
+            transform: scale(1.05);
+        }
+        .btn-primary:active {
+            background-color: var(--button-active-bg);
+            transform: scale(0.95);
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .language-toggle {
+            width: auto;
+            border-radius: 10px;
+        }
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.8;
         }
     </style>
 </head>
-<body class="container py-5">
-    <h2 class="text-center mb-4" data-translate="todoList">Todo List</h2>
-
-    <!-- Category Filter Dropdown -->
-    <div class="mb-3">
-        <label for="categoryFilter" class="form-label" data-translate="filterByCategory">Filter by Category</label>
-        <select id="categoryFilter" class="form-select" aria-label="Filter by category">
-            <option value="all" data-translate="all">All Categories</option>
-            <option value="General" data-translate="general">General</option>
-            <option value="Work" data-translate="work">Work</option>
-            <option value="Personal" data-translate="personal">Personal</option>
-        </select>
-    </div>
-
-    <!-- Task Input Form -->
-    <div class="input-group mb-3">
-        <input type="text" id="taskInput" class="form-control" data-translate-placeholder="taskName" placeholder="Add a new task" aria-label="Task description">
-        <div class="invalid-feedback" data-translate="taskName">Please enter a task description.</div>
-        <select id="taskCategory" class="form-select" aria-label="Task category">
-            <option value="General" data-translate="general">General</option>
-            <option value="Work" data-translate="work">Work</option>
-            <option value="Personal" data-translate="personal">Personal</option>
-        </select>
-        <select id="taskPriority" class="form-select" aria-label="Task priority">
-            <option value="low" data-translate="low">Low</option>
-            <option value="medium" data-translate="medium">Medium</option>
-            <option value="high" data-translate="high">High</option>
-        </select>
-        <select id="taskRecurrence" class="form-select" aria-label="Task recurrence">
-            <option value="none" data-translate="none">None</option>
-            <option value="daily" data-translate="daily">Daily</option>
-            <option value="weekly" data-translate="weekly">Weekly</option>
-            <option value="monthly" data-translate="monthly">Monthly</option>
-        </select>
-        <input type="date" id="taskDate" class="form-control" aria-label="Due date">
-        <div class="input-group mb-3">
-            <textarea id="taskNotes" class="form-control" data-translate-placeholder="taskNotes" placeholder="Add notes (optional)" aria-label="Task notes" rows="2"></textarea>
+<body class="py-5">
+    <div class="container">
+        <h1 class="text-center mb-4">Todo List and Spending Tracker</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <button class="btn btn-primary mb-2" id="toggleThemeBtn" data-translate="toggleDarkMode">Toggle Dark Mode</button>
+            <select id="languageToggle" class="form-select language-toggle mb-2">
+                <option value="en" data-translate="english">English</option>
+                <option value="ne" data-translate="nepali">Nepali</option>
+            </select>
         </div>
-        <button class="btn btn-primary" id="addTaskBtn" data-translate="addTask">Add Task</button>
-        <button class="btn btn-secondary btn-sm" id="clearDateBtn" data-translate="cancel">Clear Date</button>
-    </div>
-
-    <!-- Sort and Filter Buttons -->
-    <div class="mb-3">
-        <button class="btn btn-info" id="sortDateBtn" data-translate="dueDate">Sort by Date</button>
-        <button class="btn btn-info" id="sortPriorityBtn" data-translate="priority">Sort by Priority</button>
-        <button class="btn btn-info" id="filterPendingBtn" data-translate="noTasks">Show Pending</button>
-        <button class="btn btn-info" id="filterCompletedBtn" data-translate="completed">Show Completed</button>
-        <button class="btn btn-info" id="filterAllBtn" data-translate="all">Show All</button>
-    </div>
-
-    <!-- Task List -->
-    <ul id="taskList" class="list-group mb-3" role="list" aria-live="polite"></ul>
-
-    <!-- Action Buttons -->
-    <div>
-        <button class="btn btn-info" id="exportExcelBtn" data-translate="exportExcel">Export to Excel</button>
-        <button class="btn btn-secondary" id="sendEmailBtn" data-translate="sendEmail">Email Todo List</button>
-        <button class="btn btn-success" id="markAllCompletedBtn" data-translate="completed">Mark All Completed</button>
-        <button class="btn btn-danger" id="deleteAllBtn" data-translate="delete">Delete All</button>
-        <button class="btn btn-warning" id="undoBtn" data-translate="undo">Undo</button>
-        <button class="btn btn-warning" id="redoBtn" data-translate="redo">Redo</button>
-        <button class="btn btn-primary" id="backupBtn" data-translate="backup">Backup Data</button>
-        <button class="btn btn-primary" id="restoreBtn" data-translate="restore">Restore Data</button>
-        <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
-    </div>
-
-    <!-- Edit Task Modal -->
-    <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editTaskModalLabel" data-translate="edit">Edit Task</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="editTaskInput" class="form-label" data-translate="taskName">Task Description</label>
-                        <input type="text" id="editTaskInput" class="form-control" aria-label="Edit task description">
-                        <div class="invalid-feedback" data-translate="taskName">Task cannot be empty.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="editTaskCategory" class="form-label" data-translate="category">Category</label>
-                        <select id="editTaskCategory" class="form-select" aria-label="Edit task category">
-                            <option value="General" data-translate="general">General</option>
-                            <option value="Work" data-translate="work">Work</option>
-                            <option value="Personal" data-translate="personal">Personal</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="editTaskPriority" class="form-label" data-translate="priority">Priority</label>
-                        <select id="editTaskPriority" class="form-select" aria-label="Edit task priority">
-                            <option value="low" data-translate="low">Low</option>
-                            <option value="medium" data-translate="medium">Medium</option>
-                            <option value="high" data-translate="high">High</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="editTaskRecurrence" class="form-label" data-translate="recurrence">Recurrence</label>
-                        <select id="editTaskRecurrence" class="form-select" aria-label="Edit task recurrence">
-                            <option value="none" data-translate="none">None</option>
-                            <option value="daily" data-translate="daily">Daily</option>
-                            <option value="weekly" data-translate="weekly">Weekly</option>
-                            <option value="monthly" data-translate="monthly">Monthly</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="editTaskDate" class="form-label" data-translate="dueDate">Due Date</label>
-                        <div class="input-group">
-                            <input type="date" id="editTaskDate" class="form-control" aria-label="Edit due date">
-                            <button class="btn btn-secondary btn-sm" id="editClearDateBtn" data-translate="cancel">Clear Date</button>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="editTaskNotes" class="form-label" data-translate="taskNotes">Notes</label>
-                        <textarea id="editTaskNotes" class="form-control" aria-label="Edit task notes" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveEditBtn" data-translate="save">Save</button>
-                </div>
+        <ul class="nav nav-tabs" id="appTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="todo-tab" data-bs-toggle="tab" data-bs-target="#todo" type="button" role="tab" aria-controls="todo" aria-selected="true" data-translate="todoList">Todo List</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="spending-tab" data-bs-toggle="tab" data-bs-target="#spending" type="button" role="tab" aria-controls="spending" aria-selected="false" data-translate="spendingTracker">Spending Tracker</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="appTabContent">
+            <div class="tab-pane fade show active" id="todo" role="tabpanel" aria-labelledby="todo-tab">
+                <iframe src="todo-list.html" id="todoIframe" title="Todo List"></iframe>
+            </div>
+            <div class="tab-pane fade" id="spending" role="tabpanel" aria-labelledby="spending-tab">
+                <iframe src="spending-tracker.html" id="spendingIframe" title="Spending Tracker"></iframe>
             </div>
         </div>
+        <footer>
+            Software concept and designed by Santosh Phuyal
+        </footer>
     </div>
 
-    <!-- Email Modal -->
-    <div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="emailModalLabel" data-translate="sendEmail">Send Todo List</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="email" id="emailInput" class="form-control" data-translate-placeholder="emailPlaceholder" placeholder="Enter recipient email" aria-label="Recipient email">
-                    <div class="invalid-feedback" data-translate="emailInvalid">Please enter a valid email address.</div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="sendEmailConfirmBtn" data-translate="send">Send</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Commented out XLSX script as it appears unused -->
+    <!--
+    <script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+            return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+            if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+                try {
+                    var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                    var firstSheetName = workbook.SheetNames[0];
+                    var worksheet = workbook.Sheets[firstSheetName];
+                    var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                    var filteredData = jsonData.filter(row => row.some(filledCell));
+                    var headerRowIndex = filteredData.findIndex((row, index) =>
+                        row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                    );
+                    if (headerRowIndex === -1 || headerRowIndex > 25) {
+                        headerRowIndex = 0;
+                    }
+                    var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+                    csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                    return csv;
+                } catch (e) {
+                    console.error(e);
+                    return "";
+                }
+            }
+            return gk_fileData[filename] || "";
+        }
+    </script>
+    -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.5.6/purify.min.js" integrity="sha512-WqUXS3XzR/4WNa4s+DjQd6zO7Wepg3jBqzCtoblzU2IAjdK9W8D7Y2AHb0Qz3JIuGL4cXWoS5T8q3IN0A9tkLTVQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="utils.js"></script>
     <script>
-(function () {
-    // State management
-    const state = {
-        tasks: [],
-        history: [],
-        redoStack: [],
-        filter: 'all', // Status filter: all, pending, completed
-        categoryFilter: 'all', // Category filter: all, General, Work, Personal
-    };
+        (function () {
+            const todoIframe = document.getElementById('todoIframe');
+            const spendingIframe = document.getElementById('spendingIframe');
+            const toggleThemeBtn = document.getElementById('toggleThemeBtn');
+            const languageToggle = document.getElementById('languageToggle');
 
-    let loadTasksTimeout = null;
-    let currentEditIndex = null;
+            function initializeApp() {
+                // Load saved theme using applyTheme from utils.js
+                applyTheme();
+                applyTranslations();
 
-    // Fallback sanitization if DOMPurify fails
-    function sanitizeInput(input) {
-        if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
-            return DOMPurify.sanitize(input);
-        }
-        return input.replace(/<[^>]+>/g, '');
-    }
+                // Load saved language
+                const savedLanguage = localStorage.getItem('selectedLanguage') || 'en';
+                languageToggle.value = savedLanguage;
 
-    // Request notification permission
-    function requestNotificationPermission() {
-        if ('Notification' in window) {
-            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        console.log('Notification permission granted.');
-                    } else {
-                        console.log('Notification permission denied. Falling back to alerts.');
-                    }
-                }).catch(error => {
-                    console.error('Error requesting notification permission:', error);
-                });
+                // Wait for iframes to load before sending messages
+                todoIframe.onload = () => {
+                    propagateTheme(document.documentElement.getAttribute('data-theme'));
+                    propagateLanguage(savedLanguage);
+                };
+                spendingIframe.onload = () => {
+                    propagateTheme(document.documentElement.getAttribute('data-theme'));
+                    propagateLanguage(savedLanguage);
+                };
             }
-        } else {
-            console.log('Browser does not support notifications. Falling back to alerts.');
-        }
-    }
 
-    // Listen for theme and language updates from parent
-    window.addEventListener('message', (event) => {
-        if (event.data.theme) {
-            document.documentElement.setAttribute('data-theme', event.data.theme);
-            localStorage.setItem('theme', event.data.theme);
-            applyTranslations(); // Update UI after theme change
-        }
-        if (event.data.language) {
-            localStorage.setItem('selectedLanguage', event.data.language);
-            applyTranslations();
-            loadTasks(); // Refresh task list to update translated dynamic content
-        }
-    });
-
-    // Initialize
-    document.addEventListener("DOMContentLoaded", () => {
-        try {
-            const storedTasks = localStorage.getItem("tasks");
-            if (storedTasks) {
-                state.tasks = parseMinifiedJSON(storedTasks);
-            }
-        } catch (e) {
-            console.error("Failed to load tasks:", e);
-            alert(getTranslation("loadTasksError", { error: e.message }));
-        }
-        document.getElementById("taskDate").value = new Date().toISOString().split("T")[0];
-        applyTheme();
-        applyTranslations();
-        initializeEventListeners();
-        requestNotificationPermission();
-        loadTasks();
-        checkDueDates();
-    });
-
-    /**
-     * Initializes all event listeners for buttons and inputs.
-     */
-    function initializeEventListeners() {
-        document.getElementById("addTaskBtn").addEventListener("click", addTask);
-        document.getElementById("clearDateBtn").addEventListener("click", clearDate);
-        document.getElementById("sortDateBtn").addEventListener("click", () => sortTasks("date"));
-        document.getElementById("sortPriorityBtn").addEventListener("click", () => sortTasks("priority"));
-        document.getElementById("filterPendingBtn").addEventListener("click", () => filterTasks("pending"));
-        document.getElementById("filterCompletedBtn").addEventListener("click", () => filterTasks("completed"));
-        document.getElementById("filterAllBtn").addEventListener("click", () => filterTasks("all"));
-        document.getElementById("categoryFilter").addEventListener("change", () => filterByCategory(document.getElementById("categoryFilter").value));
-        document.getElementById("exportExcelBtn").addEventListener("click", exportToExcel);
-        document.getElementById("sendEmailBtn").addEventListener("click", openEmailModal);
-        document.getElementById("markAllCompletedBtn").addEventListener("click", markAllCompleted);
-        document.getElementById("deleteAllBtn").addEventListener("click", deleteAllTasks);
-        document.getElementById("undoBtn").addEventListener("click", undoAction);
-        document.getElementById("redoBtn").addEventListener("click", redoAction);
-        document.getElementById("saveEditBtn").addEventListener("click", saveEditedTask);
-        document.getElementById("sendEmailConfirmBtn").addEventListener("click", sendEmail);
-        document.getElementById("editClearDateBtn").addEventListener("click", () => document.getElementById("editTaskDate").value = "");
-        document.getElementById("backupBtn").addEventListener("click", backupData);
-        document.getElementById("restoreBtn").addEventListener("click", () => document.getElementById("restoreFileInput").click());
-        document.getElementById("restoreFileInput").addEventListener("change", restoreData);
-
-        // Debounced input event for task input
-        document.getElementById("taskInput").addEventListener("input", debounce(() => {
-            document.getElementById("taskInput").classList.remove("is-invalid");
-        }, 300));
-
-        // Keyboard navigation for buttons
-        document.querySelectorAll(".btn").forEach(btn => {
-            btn.addEventListener("keydown", (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                    btn.click();
-                    e.preventDefault();
+            function propagateTheme(theme) {
+                if (todoIframe.contentWindow) {
+                    todoIframe.contentWindow.postMessage({ theme: theme }, '*');
                 }
-            });
-        });
-    }
+                if (spendingIframe.contentWindow) {
+                    spendingIframe.contentWindow.postMessage({ theme: theme }, '*');
+                }
+            }
 
-    /**
-     * Saves tasks to localStorage with compression.
-     */
-    function saveTasks() {
-        try {
-            checkStorageCapacity();
-            localStorage.setItem("tasks", minifyJSON(state.tasks));
-        } catch (e) {
-            console.error("Failed to save tasks:", e);
-            alert(getTranslation("saveTasksError", { error: e.message }));
-            throw e;
-        }
-    }
+            function propagateLanguage(lang) {
+                if (todoIframe.contentWindow) {
+                    todoIframe.contentWindow.postMessage({ language: lang }, '*');
+                }
+                if (spendingIframe.contentWindow) {
+                    spendingIframe.contentWindow.postMessage({ language: lang }, '*');
+                }
+            }
 
-    /**
-     * Saves the current state to history for undo/redo.
-     */
-    function saveState() {
-        state.history.push(minifyJSON(state.tasks));
-        state.redoStack = [];
-    }
-
-    /**
-     * Adds a new task to the list.
-     */
-    function addTask() {
-        const taskInput = document.getElementById("taskInput");
-        const taskText = taskInput.value.trim();
-        const taskDate = document.getElementById("taskDate").value;
-        const category = document.getElementById("taskCategory").value;
-        const priority = document.getElementById("taskPriority").value;
-        const recurrence = document.getElementById("taskRecurrence").value;
-        const notes = document.getElementById("taskNotes").value.trim();
-
-        if (!taskText) {
-            taskInput.classList.add("is-invalid");
-            return;
-        }
-        taskInput.classList.remove("is-invalid");
-
-        try {
-            saveState();
-            state.tasks.push({
-                text: sanitizeInput(taskText),
-                date: taskDate || null,
-                category,
-                priority,
-                recurrence,
-                notes: sanitizeInput(notes),
-                completed: false
-            });
-            saveTasks();
-            resetInputs();
-            loadTasks();
-        } catch (e) {
-            console.error("Failed to add task:", e);
-            alert(getTranslation("addTaskError", { error: e.message }));
-        }
-    }
-
-    /**
-     * Resets input fields to default values.
-     */
-    function resetInputs() {
-        const taskInput = document.getElementById("taskInput");
-        taskInput.value = "";
-        taskInput.classList.remove("is-invalid");
-        document.getElementById("taskCategory").value = "General";
-        document.getElementById("taskPriority").value = "low";
-        document.getElementById("taskRecurrence").value = "none";
-        document.getElementById("taskDate").value = new Date().toISOString().split("T")[0];
-        document.getElementById("taskNotes").value = "";
-    }
-
-    /**
-     * Clears the due date input.
-     */
-    function clearDate() {
-        document.getElementById("taskDate").value = "";
-    }
-
-    /**
-     * Loads and displays tasks based on current filters.
-     */
-    function loadTasks() {
-        if (loadTasksTimeout) cancelAnimationFrame(loadTasksTimeout);
-        loadTasksTimeout = requestAnimationFrame(() => {
-            const taskList = document.getElementById("taskList");
-            taskList.innerHTML = "";
-            let filteredTasks = state.tasks.filter(task => {
-                const statusMatch = state.filter === "all" || (state.filter === "completed" ? task.completed : !task.completed);
-                const categoryMatch = state.categoryFilter === "all" || task.category === state.categoryFilter;
-                return statusMatch && categoryMatch;
+            toggleThemeBtn.addEventListener('click', () => {
+                toggleTheme();
+                applyTranslations(); // Updates the toggle button text
+                propagateTheme(document.documentElement.getAttribute('data-theme'));
             });
 
-            filteredTasks.forEach((task, index) => {
-                const taskItem = document.createElement("li");
-                taskItem.className = `list-group-item d-flex flex-column ${task.priority} ${task.completed ? "completed" : ""}`;
-                taskItem.setAttribute("role", "listitem");
-                taskItem.setAttribute("aria-label", `${task.text}, ${getTranslation(task.category.toLowerCase())}, ${getTranslation(task.priority)}, ${task.date || getTranslation("noDueDate")}, ${task.completed ? getTranslation("completed") : getTranslation("noTasks")}`);
-
-                const taskInfo = document.createElement("div");
-                taskInfo.className = "d-flex justify-content-between align-items-center";
-                const taskText = document.createElement("span");
-                taskText.textContent = `${task.text} - ${task.date || getTranslation("noDueDate")} (${getTranslation(task.category.toLowerCase())}, ${getTranslation(task.priority)}, ${getTranslation(task.recurrence)})`;
-                taskInfo.appendChild(taskText);
-
-                const buttonGroup = document.createElement("div");
-                const completeBtn = document.createElement("button");
-                completeBtn.className = "btn btn-success btn-sm me-2";
-                completeBtn.textContent = "✔";
-                completeBtn.setAttribute("aria-label", getTranslation("completed"));
-                completeBtn.onclick = () => markCompleted(index);
-
-                const editBtn = document.createElement("button");
-                editBtn.className = "btn btn-warning btn-sm me-2";
-                editBtn.textContent = "✏";
-                editBtn.setAttribute("aria-label", getTranslation("edit"));
-                editBtn.onclick = () => editTask(index);
-
-                const deleteBtn = document.createElement("button");
-                deleteBtn.className = "btn btn-danger btn-sm";
-                deleteBtn.textContent = "🗑";
-                deleteBtn.setAttribute("aria-label", getTranslation("delete"));
-                deleteBtn.onclick = () => deleteTask(index);
-
-                buttonGroup.append(completeBtn, editBtn, deleteBtn);
-                taskInfo.appendChild(buttonGroup);
-
-                // Notes section
-                if (task.notes) {
-                    const notesSection = document.createElement("div");
-                    notesSection.className = "mt-2";
-                    const notesToggle = document.createElement("button");
-                    notesToggle.className = "btn btn-link btn-sm";
-                    notesToggle.textContent = getTranslation("showNotes");
-                    notesToggle.setAttribute("data-bs-toggle", "collapse");
-                    notesToggle.setAttribute("data-bs-target", `#notes-${index}`);
-                    const notesContent = document.createElement("div");
-                    notesContent.id = `notes-${index}`;
-                    notesContent.className = "collapse notes-collapse";
-                    notesContent.textContent = task.notes;
-                    notesSection.append(notesToggle, notesContent);
-                    taskItem.append(taskInfo, notesSection);
-                } else {
-                    taskItem.appendChild(taskInfo);
-                }
-
-                taskList.appendChild(taskItem);
+            languageToggle.addEventListener('change', () => {
+                const lang = languageToggle.value;
+                localStorage.setItem('selectedLanguage', lang);
+                applyTranslations();
+                propagateLanguage(lang);
             });
-        });
-    }
 
-    /**
-     * Marks a task as completed or not.
-     * @param {number} index - Index of the task.
-     */
-    function markCompleted(index) {
-        try {
-            saveState();
-            state.tasks[index].completed = !state.tasks[index].completed;
-            saveTasks();
-            loadTasks();
-        } catch (e) {
-            console.error("Failed to mark task completed:", e);
-            alert(getTranslation("markCompletedError", { error: e.message }));
-        }
-    }
-
-    /**
-     * Opens the edit task modal and populates fields.
-     * @param {number} index - Index of the task.
-     */
-    function editTask(index) {
-        currentEditIndex = index;
-        const task = state.tasks[index];
-        const editInput = document.getElementById("editTaskInput");
-        editInput.value = task.text;
-        editInput.classList.remove("is-invalid");
-        document.getElementById("editTaskCategory").value = task.category;
-        document.getElementById("editTaskPriority").value = task.priority;
-        document.getElementById("editTaskRecurrence").value = task.recurrence;
-        document.getElementById("editTaskDate").value = task.date || "";
-        document.getElementById("editTaskNotes").value = task.notes || "";
-        new bootstrap.Modal(document.getElementById("editTaskModal")).show();
-    }
-
-    /**
-     * Saves the edited task with all fields.
-     */
-    function saveEditedTask() {
-        const editInput = document.getElementById("editTaskInput");
-        const newText = editInput.value.trim();
-        const newCategory = document.getElementById("editTaskCategory").value;
-        const newPriority = document.getElementById("editTaskPriority").value;
-        const newRecurrence = document.getElementById("editTaskRecurrence").value;
-        const newDate = document.getElementById("editTaskDate").value;
-        const newNotes = document.getElementById("editTaskNotes").value.trim();
-
-        if (!newText) {
-            editInput.classList.add("is-invalid");
-            return;
-        }
-
-        try {
-            saveState();
-            state.tasks[currentEditIndex] = {
-                ...state.tasks[currentEditIndex],
-                text: sanitizeInput(newText),
-                category: newCategory,
-                priority: newPriority,
-                recurrence: newRecurrence,
-                date: newDate || null,
-                notes: sanitizeInput(newNotes)
-            };
-            saveTasks();
-            loadTasks();
-            bootstrap.Modal.getInstance(document.getElementById("editTaskModal")).hide();
-        } catch (e) {
-            console.error("Failed to save edited task:", e);
-            editInput.classList.add("is-invalid");
-            alert(getTranslation("saveEditTaskError", { error: e.message }));
-        }
-    }
-
-    /**
-     * Deletes a task.
-     * @param {number} index - Index of the task.
-     */
-    function deleteTask(index) {
-        try {
-            saveState();
-            state.tasks.splice(index, 1);
-            saveTasks();
-            loadTasks();
-        } catch (e) {
-            console.error("Failed to delete task:", e);
-            alert(getTranslation("deleteTaskError", { error: e.message }));
-        }
-    }
-
-    /**
-     * Marks all tasks as completed.
-     */
-    function markAllCompleted() {
-        try {
-            saveState();
-            state.tasks.forEach(task => task.completed = true);
-            saveTasks();
-            loadTasks();
-        } catch (e) {
-            console.error("Failed to mark all tasks completed:", e);
-            alert(getTranslation("markAllCompletedError", { error: e.message }));
-        }
-    }
-
-    /**
-     * Deletes all tasks after confirmation.
-     */
-    function deleteAllTasks() {
-        if (confirm(getTranslation("deleteAllConfirm"))) {
-            try {
-                saveState();
-                state.tasks = [];
-                saveTasks();
-                loadTasks();
-            } catch (e) {
-                console.error("Failed to delete all tasks:", e);
-                alert(getTranslation("deleteAllTasksError", { error: e.message }));
+            // Ensure DOM is fully loaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeApp);
+            } else {
+                initializeApp();
             }
-        }
-    }
-
-    /**
-     * Undoes the last action.
-     */
-    function undoAction() {
-        if (state.history.length > 0) {
-            try {
-                state.redoStack.push(minifyJSON(state.tasks));
-                state.tasks = parseMinifiedJSON(state.history.pop());
-                saveTasks();
-                loadTasks();
-            } catch (e) {
-                console.error("Failed to undo action:", e);
-                alert(getTranslation("undoError", { error: e.message }));
-            }
-        } else {
-            alert(getTranslation("noUndo"));
-        }
-    }
-
-    /**
-     * Redoes the last undone action.
-     */
-    function redoAction() {
-        if (state.redoStack.length > 0) {
-            try {
-                state.history.push(minifyJSON(state.tasks));
-                state.tasks = parseMinifiedJSON(state.redoStack.pop());
-                saveTasks();
-                loadTasks();
-            } catch (e) {
-                console.error("Failed to redo action:", e);
-                alert(getTranslation("redoError", { error: e.message }));
-            }
-        } else {
-            alert(getTranslation("noRedo"));
-        }
-    }
-
-    /**
-     * Sorts tasks by date or priority.
-     * @param {string} criteria - Sorting criteria ("date" or "priority").
-     */
-    function sortTasks(criteria) {
-        try {
-            document.querySelectorAll(".btn-info").forEach(btn => btn.classList.remove("active"));
-            document.getElementById(`sort${criteria.charAt(0).toUpperCase() + criteria.slice(1)}Btn`).classList.add("active");
-            saveState();
-            state.tasks.sort((a, b) => {
-                if (criteria === "date") {
-                    const dateA = a.date ? new Date(a.date) : new Date("9999-12-31");
-                    const dateB = b.date ? new Date(b.date) : new Date("9999-12-31");
-                    return dateA - dateB;
-                }
-                if (criteria === "priority") {
-                    const order = { high: 3, medium: 2, low: 1 };
-                    return order[b.priority] - order[a.priority];
-                }
-            });
-            saveTasks();
-            loadTasks();
-        } catch (e) {
-            console.error("Failed to sort tasks:", e);
-            alert(getTranslation("sortTasksError", { error: e.message }));
-        }
-    }
-
-    /**
-     * Filters tasks by status (all, pending, completed).
-     * @param {string} status - Filter status.
-     */
-    function filterTasks(status) {
-        document.querySelectorAll(".btn-info").forEach(btn => btn.classList.remove("active"));
-        document.getElementById(`filter${status.charAt(0).toUpperCase() + status.slice(1)}Btn`).classList.add("active");
-        state.filter = status;
-        loadTasks();
-    }
-
-    /**
-     * Filters tasks by category.
-     * @param {string} category - Category to filter by.
-     */
-    function filterByCategory(category) {
-        state.categoryFilter = category;
-        loadTasks();
-    }
-
-    /**
-     * Exports tasks to an Excel file.
-     */
-    function exportToExcel() {
-        if (state.tasks.length === 0) {
-            alert(getTranslation("noTasksToExport"));
-            return;
-        }
-        try {
-            const worksheet = XLSX.utils.json_to_sheet(state.tasks.map(task => ({
-                ...task,
-                notes: task.notes || getTranslation("none")
-            })));
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, getTranslation("todoList"));
-            XLSX.writeFile(workbook, "Todo_List.xlsx");
-        } catch (e) {
-            console.error("Export failed:", e);
-            alert(getTranslation("exportExcelError", { error: e.message }));
-        }
-    }
-
-    /**
-     * Opens the email modal.
-     */
-    function openEmailModal() {
-        if (state.tasks.length === 0) {
-            alert(getTranslation("noTasksToSend"));
-            return;
-        }
-        document.getElementById("emailInput").value = "";
-        document.getElementById("emailInput").classList.remove("is-invalid");
-        new bootstrap.Modal(document.getElementById("emailModal")).show();
-    }
-
-    /**
-     * Sends the task list via email.
-     */
-    function sendEmail() {
-        const emailInput = document.getElementById("emailInput");
-        const email = emailInput.value.trim();
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-        if (!emailRegex.test(email)) {
-            emailInput.classList.add("is-invalid");
-            return;
-        }
-        const taskListText = state.tasks.map(task =>
-            `${task.text} - ${task.date || getTranslation("noDueDate")} (${getTranslation(task.category.toLowerCase())}, ${getTranslation(task.priority)}, ${getTranslation(task.recurrence)}, ${task.completed ? getTranslation("completed") : getTranslation("noTasks")})\n${getTranslation("notes")}: ${task.notes || getTranslation("none")}`
-        ).join("\n\n");
-        window.location.href = `mailto:${email}?subject=${encodeURIComponent(getTranslation("todoList"))}&body=${encodeURIComponent(taskListText)}`;
-        bootstrap.Modal.getInstance(document.getElementById("emailModal")).hide();
-    }
-
-    /**
-     * Checks for tasks due today and handles recurring tasks with browser notifications.
-     */
-    function checkDueDates() {
-        const today = new Date();
-        const todayStr = today.toISOString().split("T")[0];
-        state.tasks.forEach((task, index) => {
-            if (!task.completed && task.date === todayStr) {
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification(getTranslation("taskDueToday"), {
-                        body: getTranslation("taskDueReminder", { task: task.text }),
-                        icon: 'https://cdn-icons-png.flaticon.com/32/948/948739.png' // Updated icon URL
-                    });
-                } else {
-                    alert(getTranslation("taskDueReminder", { task: task.text }));
-                }
-            }
-            if (task.date && task.recurrence !== "none" && new Date(task.date) < today) {
-                let newDate = new Date(task.date);
-                let shouldContinue = true;
-                while (newDate < today && shouldContinue) {
-                    if (task.recurrence === "daily") {
-                        newDate.setDate(newDate.getDate() + 1);
-                    } else if (task.recurrence === "weekly") {
-                        newDate.setDate(newDate.getDate() + 7);
-                    } else if (task.recurrence === "monthly") {
-                        newDate.setMonth(newDate.getMonth() + 1);
-                    }
-                    if (newDate >= today) {
-                        shouldContinue = false;
-                    }
-                }
-                saveState();
-                state.tasks[index].date = newDate.toISOString().split("T")[0];
-            }
-        });
-        saveTasks();
-        loadTasks();
-        setTimeout(checkDueDates, 5 * 60 * 1000);
-    }
-
-    /**
-     * Backs up the current task list as a JSON file.
-     */
-    function backupData() {
-        try {
-            const data = JSON.stringify(state.tasks, null, 2);
-            const blob = new Blob([data], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            const date = new Date().toISOString().split("T")[0].replace(/-/g, "");
-            a.href = url;
-            a.download = `todo_backup_${date}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        } catch (e) {
-            console.error("Failed to backup data:", e);
-            alert(getTranslation("backupError", { error: e.message }));
-        }
-    }
-
-    /**
-     * Restores tasks from a JSON file, merging with existing tasks and removing duplicates.
-     */
-    function restoreData(event) {
-        const file = event.target.files[0];
-        if (!file) {
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const restoredData = JSON.parse(e.target.result);
-                if (!Array.isArray(restoredData)) {
-                    throw new Error(getTranslation("invalidBackupFormat"));
-                }
-
-                const sanitizedRestoredTasks = restoredData.map(task => ({
-                    text: sanitizeInput(task.text || ""),
-                    date: task.date && typeof task.date === "string" ? task.date : null,
-                    category: ["General", "Work", "Personal"].includes(task.category) ? task.category : "General",
-                    priority: ["low", "medium", "high"].includes(task.priority) ? task.priority : "low",
-                    recurrence: ["none", "daily", "weekly", "monthly"].includes(task.recurrence) ? task.recurrence : "none",
-                    notes: sanitizeInput(task.notes || ""),
-                    completed: typeof task.completed === "boolean" ? task.completed : false
-                })).filter(task => task.text.trim() !== "");
-
-                if (sanitizedRestoredTasks.length === 0) {
-                    throw new Error(getTranslation("noValidTasks"));
-                }
-
-                const taskMap = new Map();
-                state.tasks.forEach(task => {
-                    const key = JSON.stringify({
-                        text: task.text,
-                        date: task.date,
-                        category: task.category,
-                        priority: task.priority,
-                        recurrence: task.recurrence,
-                        notes: task.notes,
-                        completed: task.completed
-                    });
-                    taskMap.set(key, task);
-                });
-                sanitizedRestoredTasks.forEach(task => {
-                    const key = JSON.stringify({
-                        text: task.text,
-                        date: task.date,
-                        category: task.category,
-                        priority: task.priority,
-                        recurrence: task.recurrence,
-                        notes: task.notes,
-                        completed: task.completed
-                    });
-                    if (!taskMap.has(key)) {
-                        taskMap.set(key, task);
-                    }
-                });
-
-                const mergedTasks = Array.from(taskMap.values());
-                const originalTasksLength = state.tasks.length;
-
-                saveState();
-                state.tasks = mergedTasks;
-                state.history = [];
-                state.redoStack = [];
-                saveTasks();
-                loadTasks();
-                alert(getTranslation("restoreSuccess", { processed: sanitizedRestoredTasks.length, added: mergedTasks.length - originalTasksLength }));
-            } catch (e) {
-                console.error("Failed to restore data:", e);
-                alert(getTranslation("restoreError", { error: e.message }));
-            } finally {
-                document.getElementById("restoreFileInput").value = "";
-            }
-        };
-        reader.onerror = function(e) {
-            console.error("Failed to read file:", e);
-            alert(getTranslation("readFileError", { error: e.message }));
-            document.getElementById("restoreFileInput").value = "";
-        };
-        reader.readAsText(file);
-    }
-})();
+        })();
     </script>
 </body>
 </html>
