@@ -221,8 +221,8 @@
             const chartBgColor = isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)";
 
             if (categoryPieChart) {
-                categoryPieChart.data.datasets[0].backgroundColor = state.categories.map((_, i) =>
-                    `hsl(${(i * 360 / state.categories.length) % 360}, 70%, ${isDarkMode ? 60 : 50}%)`
+                categoryPieChart.data.datasets[0].backgroundColor = Object.keys(categoryPieChart.data.labels).map((_, i) =>
+                    `hsl(${(i * 360 / categoryPieChart.data.labels.length) % 360}, 70%, ${isDarkMode ? 60 : 50}%)`
                 );
                 categoryPieChart.options.plugins.legend.labels.color = chartTextColor;
                 categoryPieChart.options.plugins.title.color = chartTextColor;
@@ -629,7 +629,7 @@
                 const matchesPurchased = filterPurchased === "all" ||
                                          (filterPurchased === "purchased" && item.purchased) ||
                                          (filterPurchased === "not-purchased" && !item.purchased);
-                return matchesSearch && matchesCategory matchesPurchased;
+                return matchesSearch && matchesCategory && matchesPurchased;
             });
 
             filteredItems.forEach((item, index) => {
@@ -691,7 +691,10 @@
                 btn.addEventListener("click", () => {
                     const index = btn.getAttribute("data-index");
                     const item = state.shoppingItems[index];
-                    document.getElementById("purchaseItemInfo").textContent = `Marking "${item.name}" as purchased. Add expense for this purchase:`;
+                    document.getElementById("addPurchaseExpenseModalLabel").textContent = getTranslation("addPurchaseExpense");
+                    document.getElementById("purchaseItemInfo").textContent = getTranslation("enterAmountSpent")
+                        .replace("{item}", item.name)
+                        .replace("{quantity}", item.quantity);
                     const modal = new bootstrap.Modal(document.getElementById("addPurchaseExpenseModal"));
                     modal.show();
 
@@ -799,7 +802,6 @@
                 populateCategoryDropdowns();
                 if (categoryPieChart) {
                     categoryPieChart.options.plugins.title.text = getTranslation("categoryWiseExpenses");
-                    categoryPieChart.data.datasets[0].label = getTranslation("categoryWiseExpenses");
                     categoryPieChart.update();
                 }
                 if (monthlyTrendsChart) {
@@ -807,6 +809,13 @@
                     monthlyTrendsChart.data.datasets[0].label = getTranslation("incomeLabel");
                     monthlyTrendsChart.data.datasets[1].label = getTranslation("expenses");
                     monthlyTrendsChart.update();
+                }
+                // Refresh open modals
+                if (bootstrap.Modal.getInstance(document.getElementById("manageEntriesModal"))?.isShown) {
+                    showManageEntries();
+                }
+                if (bootstrap.Modal.getInstance(document.getElementById("shoppingListModal"))?.isShown) {
+                    displayShoppingItems();
                 }
             });
 
