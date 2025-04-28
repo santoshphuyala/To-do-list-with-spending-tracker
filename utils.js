@@ -18,6 +18,9 @@ function applyTheme() {
 // Localization
 const translations = {
     "en": {
+        // Index.html translations
+        "toggleDarkMode": "Toggle Dark Mode",
+        "toggleLightMode": "Toggle Light Mode",
         "english": "English",
         "nepali": "Nepali",
         // To-Do List
@@ -103,6 +106,10 @@ const translations = {
         // New translations for Add Purchase Expense modal
         "addPurchaseExpense": "Add Purchase Expense",
         "enterAmountSpent": "Enter the amount spent on {item} ({quantity} unit(s)).",
+        // Notifications
+        "enableNotifications": "Enable Notifications",
+        "notificationsEnabled": "Notifications are already enabled.",
+        "notificationsDenied": "Notification permission was denied. Please enable it in your browser settings.",
         // Shared Categories
         "food": "Food",
         "rent": "Rent",
@@ -120,6 +127,8 @@ const translations = {
         "deleteCategoryConfirm": "Are you sure you want to delete this item?"
     },
     "ne": {
+        "toggleDarkMode": "डार्क मोड टगल गर्नुहोस्",
+        "toggleLightMode": "लाइट मोड टगल गर्नुहोस्",
         "english": "अंग्रेजी",
         "nepali": "नेपाली",
         "todoList": "कार्य सूची",
@@ -201,6 +210,9 @@ const translations = {
         "filterByStatus": "स्थिति अनुसार फिल्टर गर्नुहोस्",
         "addPurchaseExpense": "खरिद खर्च थप्नुहोस्",
         "enterAmountSpent": "{item} मा खर्च गरिएको रकम प्रविष्ट गर्नुहोस् ({quantity} एकाइ(हरू))।",
+        "enableNotifications": "सूचनाहरू सक्षम गर्नुहोस्",
+        "notificationsEnabled": "सूचनाहरू पहिले नै सक्षम छन्।",
+        "notificationsDenied": "सूचना अनुमति अस्वीकार गरिएको छ। कृपया आफ्नो ब्राउजर सेटिङहरूमा सक्षम गर्नुहोस्।",
         "food": "खाना",
         "rent": "भाडा",
         "salary": "तलब",
@@ -234,6 +246,10 @@ function applyTranslations() {
     document.querySelectorAll("[data-translate-placeholder]").forEach(element => {
         const key = element.getAttribute("data-translate-placeholder");
         element.setAttribute("placeholder", getTranslation(key));
+    });
+    document.querySelectorAll("select option[data-translate]").forEach(option => {
+        const key = option.getAttribute("data-translate");
+        option.textContent = getTranslation(key);
     });
 }
 
