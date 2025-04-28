@@ -54,6 +54,9 @@
             --button-bg: #0d6efd;
             --button-text: #ffffff;
             --button-hover-bg: #0056b3;
+            --navbar-bg: #ffffff;
+            --navbar-text: #212529;
+            --navbar-hover-bg: #e9ecef;
         }
         [data-theme="dark"] {
             --background-color: #212529;
@@ -63,6 +66,9 @@
             --button-bg: #0d6efd;
             --button-text: #ffffff;
             --button-hover-bg: #1a73e8;
+            --navbar-bg: #343a40;
+            --navbar-text: #f8f9fa;
+            --navbar-hover-bg: #495057;
         }
         body {
             background-color: var(--background-color);
@@ -88,14 +94,54 @@
         .module-card:hover {
             transform: scale(1.05);
         }
+        .navbar {
+            background-color: var(--navbar-bg);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand, .nav-link, .dropdown-item {
+            color: var(--navbar-text) !important;
+        }
+        .dropdown-item:hover {
+            background-color: var(--navbar-hover-bg);
+        }
+        .dropdown-item.active {
+            background-color: var(--button-bg);
+            color: var(--button-text) !important;
+        }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Task & Expense Manager</h1>
-        <div class="mb-4 d-flex justify-content-end">
-            <button class="btn btn-primary" id="themeToggleBtn">Toggle Theme</button>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">Task & Expense Manager</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Navigate
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item active" href="index.html">Home</a></li>
+                            <li><a class="dropdown-item" href="todo-list.html">To-Do List</a></li>
+                            <li><a class="dropdown-item" href="spending-tracker.html">Spending Tracker</a></li>
+                            <li><a class="dropdown-item" href="shopping-list.html">Shopping List</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <button class="btn btn-primary" id="themeToggleBtn">Toggle Theme</button>
+                    </li>
+                </ul>
+            </div>
         </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Welcome to Task & Expense Manager</h1>
         <div class="row">
             <div class="col-md-4 mb-4">
                 <div class="card module-card">
