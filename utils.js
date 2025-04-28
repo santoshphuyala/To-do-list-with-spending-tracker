@@ -100,9 +100,12 @@ const translations = {
         "purchased": "Purchased",
         "notPurchased": "Not Purchased",
         "filterByStatus": "Filter by Status",
-        // New translations for Add Purchase Expense modal
         "addPurchaseExpense": "Add Purchase Expense",
         "enterAmountSpent": "Enter the amount spent on {item} ({quantity} unit(s)).",
+        // Notifications
+        "enableNotifications": "Enable Notifications",
+        "notificationsEnabled": "Notifications are enabled.",
+        "notificationsDenied": "Notification permission denied.",
         // Shared Categories
         "food": "Food",
         "rent": "Rent",
@@ -201,6 +204,9 @@ const translations = {
         "filterByStatus": "स्थिति अनुसार फिल्टर गर्नुहोस्",
         "addPurchaseExpense": "खरिद खर्च थप्नुहोस्",
         "enterAmountSpent": "{item} मा खर्च गरिएको रकम प्रविष्ट गर्नुहोस् ({quantity} एकाइ(हरू))।",
+        "enableNotifications": "सूचनाहरू सक्षम गर्नुहोस्",
+        "notificationsEnabled": "सूचनाहरू सक्षम छन्।",
+        "notificationsDenied": "सूचना अनुमति अस्वीकार गरियो।",
         "food": "खाना",
         "rent": "भाडा",
         "salary": "तलब",
@@ -255,8 +261,10 @@ function checkStorageCapacity() {
             localStorage.setItem(testKey, testData);
         }
     } catch (e) {
-        const usedSpace = (JSON.stringify(localStorage).length / 1024).toFixed(2);
-        const totalSpace = (usedSpace + (testData.length / 1024)).toFixed(2);
+        const usedSpaceKB = (JSON.stringify(localStorage).length / 1024);
+        const usedSpace = usedSpaceKB.toFixed(2);
+        const totalSpaceKB = parseFloat(usedSpace) + (testData.length / 1024);
+        const totalSpace = totalSpaceKB.toFixed(2);
         console.log(`Storage: ${usedSpace} KB used out of ~${totalSpace} KB available.`);
         localStorage.removeItem(testKey);
         if (e.name === "QuotaExceededError") {
