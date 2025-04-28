@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -135,18 +96,18 @@
     <div class="container">
         <h1 class="text-center mb-4">Todo List and Spending Tracker</h1>
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-            <button class="btn btn-primary mb-2" id="toggleThemeBtn">Toggle Dark Mode</button>
+            <button class="btn btn-primary mb-2" id="toggleThemeBtn" data-translate="toggleDarkMode">Toggle Dark Mode</button>
             <select id="languageToggle" class="form-select language-toggle mb-2">
-                <option value="en">English</option>
-                <option value="ne">Nepali</option>
+                <option value="en" data-translate="english">English</option>
+                <option value="ne" data-translate="nepali">Nepali</option>
             </select>
         </div>
         <ul class="nav nav-tabs" id="appTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="todo-tab" data-bs-toggle="tab" data-bs-target="#todo" type="button" role="tab" aria-controls="todo" aria-selected="true">Todo List</button>
+                <button class="nav-link active" id="todo-tab" data-bs-toggle="tab" data-bs-target="#todo" type="button" role="tab" aria-controls="todo" aria-selected="true" data-translate="todoList">Todo List</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="spending-tab" data-bs-toggle="tab" data-bs-target="#spending" type="button" role="tab" aria-controls="spending" aria-selected="false">Spending Tracker</button>
+                <button class="nav-link" id="spending-tab" data-bs-toggle="tab" data-bs-target="#spending" type="button" role="tab" aria-controls="spending" aria-selected="false" data-translate="spendingTracker">Spending Tracker</button>
             </li>
         </ul>
         <div class="tab-content" id="appTabContent">
@@ -161,9 +122,85 @@
             Software concept and designed by Santosh Phuyal
         </footer>
     </div>
+
+    <!-- Commented out XLSX script as it appears unused -->
+    <!--
+    <script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+            return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+            if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+                try {
+                    var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                    var firstSheetName = workbook.SheetNames[0];
+                    var worksheet = workbook.Sheets[firstSheetName];
+                    var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                    var filteredData = jsonData.filter(row => row.some(filledCell));
+                    var headerRowIndex = filteredData.findIndex((row, index) =>
+                        row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                    );
+                    if (headerRowIndex === -1 || headerRowIndex > 25) {
+                        headerRowIndex = 0;
+                    }
+                    var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+                    csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                    return csv;
+                } catch (e) {
+                    console.error(e);
+                    return "";
+                }
+            }
+            return gk_fileData[filename] || "";
+        }
+    </script>
+    -->
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="utils.js"></script>
     <script>
+        // Translation dictionary for index.html
+        const translations = {
+            en: {
+                toggleDarkMode: "Toggle Dark Mode",
+                toggleLightMode: "Toggle Light Mode",
+                english: "English",
+                nepali: "Nepali",
+                todoList: "Todo List",
+                spendingTracker: "Spending Tracker"
+            },
+            ne: {
+                toggleDarkMode: "डार्क मोड टगल गर्नुहोस्",
+                toggleLightMode: "लाइट मोड टगल गर्नुहोस्",
+                english: "अंग्रेजी",
+                nepali: "नेपाली",
+                todoList: "टुडु लिस्ट",
+                spendingTracker: "खर्च ट्र्याकर"
+            }
+        };
+
+        function getTranslation(key) {
+            const lang = document.getElementById("languageToggle").value;
+            return translations[lang][key] || key;
+        }
+
+        function applyTranslations() {
+            document.querySelectorAll("[data-translate]").forEach(elem => {
+                const key = elem.getAttribute("data-translate");
+                elem.textContent = getTranslation(key);
+            });
+            updateThemeButtonText();
+        }
+
+        function updateThemeButtonText() {
+            const toggleThemeBtn = document.getElementById('toggleThemeBtn');
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            toggleThemeBtn.textContent = currentTheme === 'dark' ? getTranslation('toggleLightMode') : getTranslation('toggleDarkMode');
+        }
+
         (function () {
             const todoIframe = document.getElementById('todoIframe');
             const spendingIframe = document.getElementById('spendingIframe');
@@ -171,42 +208,54 @@
             const languageToggle = document.getElementById('languageToggle');
 
             function initializeApp() {
-                // Load saved theme
-                const savedTheme = localStorage.getItem('theme') || 'light';
-                document.documentElement.setAttribute('data-theme', savedTheme);
-                toggleThemeBtn.textContent = savedTheme === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+                // Load saved theme using applyTheme from utils.js
+                applyTheme();
+                updateThemeButtonText();
 
                 // Load saved language
                 const savedLanguage = localStorage.getItem('selectedLanguage') || 'en';
                 languageToggle.value = savedLanguage;
+                applyTranslations();
 
-                // Propagate initial theme and language to iframes
-                propagateTheme(savedTheme);
-                propagateLanguage(savedLanguage);
+                // Wait for iframes to load before sending messages
+                todoIframe.onload = () => {
+                    propagateTheme(document.documentElement.getAttribute('data-theme'));
+                    propagateLanguage(savedLanguage);
+                };
+                spendingIframe.onload = () => {
+                    propagateTheme(document.documentElement.getAttribute('data-theme'));
+                    propagateLanguage(savedLanguage);
+                };
             }
 
             function propagateTheme(theme) {
-                todoIframe.contentWindow.postMessage({ theme: theme }, '*');
-                spendingIframe.contentWindow.postMessage({ theme: theme }, '*');
+                if (todoIframe.contentWindow) {
+                    todoIframe.contentWindow.postMessage({ theme: theme }, '*');
+                }
+                if (spendingIframe.contentWindow) {
+                    spendingIframe.contentWindow.postMessage({ theme: theme }, '*');
+                }
             }
 
             function propagateLanguage(lang) {
-                todoIframe.contentWindow.postMessage({ language: lang }, '*');
-                spendingIframe.contentWindow.postMessage({ language: lang }, '*');
+                if (todoIframe.contentWindow) {
+                    todoIframe.contentWindow.postMessage({ language: lang }, '*');
+                }
+                if (spendingIframe.contentWindow) {
+                    spendingIframe.contentWindow.postMessage({ language: lang }, '*');
+                }
             }
 
             toggleThemeBtn.addEventListener('click', () => {
-                const currentTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                document.documentElement.setAttribute('data-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
-                toggleThemeBtn.textContent = newTheme === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode';
-                propagateTheme(newTheme);
+                toggleTheme();
+                updateThemeButtonText();
+                propagateTheme(document.documentElement.getAttribute('data-theme'));
             });
 
             languageToggle.addEventListener('change', () => {
                 const lang = languageToggle.value;
                 localStorage.setItem('selectedLanguage', lang);
+                applyTranslations();
                 propagateLanguage(lang);
             });
 
