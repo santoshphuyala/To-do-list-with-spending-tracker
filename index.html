@@ -42,144 +42,401 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - Task & Expense Manager</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-    <link rel="icon" href="data:,">
+    <title>Task & Expense Manager</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
     <style>
         :root {
-            --background-color: #f8f9fa;
-            --text-color: #212529;
-            --card-bg: #ffffff;
-            --border-color: #dee2e6;
-            --button-bg: #0d6efd;
-            --button-text: #ffffff;
-            --button-hover-bg: #0056b3;
-            --navbar-bg: #ffffff;
-            --navbar-text: #212529;
-            --navbar-hover-bg: #e9ecef;
-        }
-        [data-theme="dark"] {
-            --background-color: #212529;
-            --text-color: #f8f9fa;
-            --card-bg: #343a40;
-            --border-color: #495057;
-            --button-bg: #0d6efd;
-            --button-text: #ffffff;
-            --button-hover-bg: #1a73e8;
-            --navbar-bg: #343a40;
-            --navbar-text: #f8f9fa;
-            --navbar-hover-bg: #495057;
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
         }
         body {
-            background-color: var(--background-color);
-            color: var(--text-color);
-            transition: all 0.3s ease;
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #f8f9fa;
         }
-        .container, .card {
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            border-color: var(--border-color);
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            width: 250px;
+            background-color: #ffffff;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        .sidebar .nav-link {
+            color: var(--secondary-color);
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 5px 10px;
+        }
+        .sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 10px;
         }
         .btn-primary {
-            background-color: var(--button-bg);
-            color: var(--button-text);
-            transition: background-color 0.3s ease;
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
         }
-        .btn-primary:hover {
-            background-color: var(--button-hover-bg);
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1055;
         }
-        .module-card {
-            transition: transform 0.2s;
+        .modal-content {
+            border-radius: 10px;
         }
-        .module-card:hover {
-            transform: scale(1.05);
+        .accordion-button {
+            background-color: #ffffff;
+            color: var(--primary-color);
         }
-        .navbar {
-            background-color: var(--navbar-bg);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        .accordion-button:not(.collapsed) {
+            background-color: var(--primary-color);
+            color: white;
         }
-        .navbar-brand, .nav-link, .dropdown-item {
-            color: var(--navbar-text) !important;
-        }
-        .dropdown-item:hover {
-            background-color: var(--navbar-hover-bg);
-        }
-        .dropdown-item.active {
-            background-color: var(--button-bg);
-            color: var(--button-text) !important;
+        [aria-live="polite"] {
+            transition: all 0.3s ease;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg">
-        <div class="container">
-            <a class="navbar-brand" href="index.html">Task & Expense Manager</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Navigate
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item active" href="index.html">Home</a></li>
-                            <li><a class="dropdown-item" href="todo-list.html">To-Do List</a></li>
-                            <li><a class="dropdown-item" href="spending-tracker.html">Spending Tracker</a></li>
-                            <li><a class="dropdown-item" href="shopping-list.html">Shopping List</a></li>
-                        </ul>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <button class="btn btn-primary" id="themeToggleBtn">Toggle Theme</button>
-                    </li>
-                </ul>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar d-flex flex-column p-3">
+        <h4 class="text-center mb-4">Task & Expense Manager</h4>
+        <nav class="nav flex-column">
+            <a class="nav-link active" href="#dashboard" onclick="showSection('dashboard')">Dashboard</a>
+            <a class="nav-link" href="#todo-list" onclick="showSection('todo-list')">To-Do List</a>
+            <a class="nav-link" href="#shopping-list" onclick="showSection('shopping-list')">Shopping List</a>
+            <a class="nav-link" href="#spending-tracker" onclick="showSection('spending-tracker')">Spending Tracker</a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Toast Container -->
+        <div class="toast-container"></div>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section">
+            <div class="card p-4 mb-4">
+                <h2>Dashboard</h2>
+                <div id="dashboard-content" aria-live="polite"></div>
+                <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add-expense-modal">
+                    <i class="fas fa-plus"></i> Add Expense from Shopping
+                </button>
+            </div>
+        </section>
+
+        <!-- To-Do List Section -->
+        <section id="todo-list" class="section d-none">
+            <div class="card p-4 mb-4">
+                <h2>To-Do List</h2>
+                <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#add-task-modal">
+                    <i class="fas fa-plus"></i> Add Task
+                </button>
+                <div class="accordion" id="task-accordion">
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#active-tasks">
+                                Active Tasks
+                            </button>
+                        </h3>
+                        <div id="active-tasks" class="accordion-collapse collapse show" data-bs-parent="#task-accordion">
+                            <div class="accordion-body" id="task-list" aria-live="polite"></div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#completed-tasks">
+                                Completed Tasks
+                            </button>
+                        </h3>
+                        <div id="completed-tasks" class="accordion-collapse collapse" data-bs-parent="#task-accordion">
+                            <div class="accordion-body" id="completed-task-list" aria-live="polite"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-secondary me-2" onclick="undoTask()"><i class="fas fa-undo"></i> Undo</button>
+                    <button class="btn btn-secondary" onclick="redoTask()"><i class="fas fa-redo"></i> Redo</button>
+                    <button class="btn btn-outline-primary ms-2" onclick="exportTasks('csv')"><i class="fas fa-download"></i> Export</button>
+                    <input type="file" id="task-import" class="d-none" accept=".csv" onchange="importTasks(event)">
+                    <button class="btn btn-outline-primary" onclick="document.getElementById('task-import').click()">
+                        <i class="fas fa-upload"></i> Import
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Shopping List Section -->
+        <section id="shopping-list" class="section d-none">
+            <div class="card p-4 mb-4">
+                <h2>Shopping List</h2>
+                <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#add-item-modal">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+                <div class="accordion" id="shopping-accordion">
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#pending-items">
+                                Pending Items
+                            </button>
+                        </h3>
+                        <div id="pending-items" class="accordion-collapse collapse show" data-bs-parent="#shopping-accordion">
+                            <div class="accordion-body" id="shopping-list" aria-live="polite"></div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#purchased-items">
+                                Purchased Items
+                            </button>
+                        </h3>
+                        <div id="purchased-items" class="accordion-collapse collapse" data-bs-parent="#shopping-accordion">
+                            <div class="accordion-body" id="purchased-list" aria-live="polite"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-secondary me-2" onclick="undoItem()"><i class="fas fa-undo"></i> Undo</button>
+                    <button class="btn btn-secondary" onclick="redoItem()"><i class="fas fa-redo"></i> Redo</button>
+                    <button class="btn btn-outline-primary ms-2" onclick="exportItems('csv')"><i class="fas fa-download"></i> Export</button>
+                    <input type="file" id="item-import" class="d-none" accept=".csv" onchange="importItems(event)">
+                    <button class="btn btn-outline-primary" onclick="document.getElementById('item-import').click()">
+                        <i class="fas fa-upload"></i> Import
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Spending Tracker Section -->
+        <section id="spending-tracker" class="section d-none">
+            <div class="card p-4 mb-4">
+                <h2>Spending Tracker</h2>
+                <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#add-entry-modal">
+                    <i class="fas fa-plus"></i> Add Entry
+                </button>
+                <div class="accordion" id="spending-accordion">
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#recent-entries">
+                                Recent Entries
+                            </button>
+                        </h3>
+                        <div id="recent-entries" class="accordion-collapse collapse show" data-bs-parent="#spending-accordion">
+                            <div class="accordion-body" id="spending-list" aria-live="polite"></div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h3 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#older-entries">
+                                Older Entries
+                            </button>
+                        </h3>
+                        <div id="older-entries" class="accordion-collapse collapse" data-bs-parent="#spending-accordion">
+                            <div class="accordion-body" id="older-spending-list" aria-live="polite"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-secondary me-2" onclick="undoEntry()"><i class="fas fa-undo"></i> Undo</button>
+                    <button class="btn btn-secondary" onclick="redoEntry()"><i class="fas fa-redo"></i> Redo</button>
+                    <button class="btn btn-outline-primary ms-2" onclick="exportEntries('csv')"><i class="fas fa-download"></i> Export</button>
+                    <input type="file" id="entry-import" class="d-none" accept=".csv" onchange="importEntries(event)">
+                    <button class="btn btn-outline-primary" onclick="document.getElementById('entry-import').click()">
+                        <i class="fas fa-upload"></i> Import
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Modals -->
+        <!-- Add Task Modal -->
+        <div class="modal fade" id="add-task-modal" tabindex="-1" aria-labelledby="add-task-modal-label" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="add-task-modal-label">Add Task</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="task-form">
+                            <div class="mb-3">
+                                <label for="task-text" class="form-label">Task</label>
+                                <input type="text" class="form-control" id="task-text" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="task-date" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="task-date">
+                            </div>
+                            <div class="mb-3">
+                                <label for="task-link" class="form-label">Link to Shopping List</label>
+                                <select class="form-select" id="task-link">
+                                    <option value="">None</option>
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
-    </nav>
 
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Welcome to Task & Expense Manager</h1>
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <div class="card module-card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">To-Do List</h5>
-                        <p class="card-text">Manage your tasks with categories, priorities, and due dates.</p>
-                        <a href="todo-list.html" class="btn btn-primary">Go to To-Do List</a>
+        <!-- Add Item Modal -->
+        <div class="modal fade" id="add-item-modal" tabindex="-1" aria-labelledby="add-item-modal-label" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="add-item-modal-label">Add Item</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="item-form">
+                            <div class="mb-3">
+                                <label for="item-text" class="form-label">Item</label>
+                                <input type="text" class="form-control" id="item-text" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="item-quantity" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="item-quantity" min="1" value="1">
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                        </form>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <div class="card module-card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Spending Tracker</h5>
-                        <p class="card-text">Track your income, expenses, and budgets with summaries.</p>
-                        <a href="spending-tracker.html" class="btn btn-primary">Go to Spending Tracker</a>
+        </div>
+
+        <!-- Add Expense Modal -->
+        <div class="modal fade" id="add-expense-modal" tabindex="-1" aria-labelledby="add-expense-modal-label" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="add-expense-modal-label">Add Expense</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="expense-form">
+                            <div class="mb-3">
+                                <label for="expense-item" class="form-label">Item</label>
+                                <select class="form-select" id="expense-item">
+                                    <option value="">Select Item</option>
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="expense-amount" class="form-label">Amount</label>
+                                <input type="number" class="form-control" id="expense-amount" min="0" step="0.01" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="expense-category" class="form-label">Category</label>
+                                <input type="text" class="form-control" id="expense-category" value="Shopping">
+                            </div>
+                            <div class="mb-3">
+                                <label for="expense-date" class="form-label">Date</label>
+                                <input type="date" class="form-control" id="expense-date" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                        </form>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <div class="card module-card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Shopping List</h5>
-                        <p class="card-text">Organize your shopping items and track purchases.</p>
-                        <a href="shopping-list.html" class="btn btn-primary">Go to Shopping List</a>
+        </div>
+
+        <!-- Add Entry Modal -->
+        <div class="modal fade" id="add-entry-modal" tabindex="-1" aria-labelledby="add-entry-modal-label" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="add-entry-modal-label">Add Entry</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="entry-form">
+                            <div class="mb-3">
+                                <label for="entry-amount" class="form-label">Amount</label>
+                                <input type="number" class="form-control" id="entry-amount" min="0" step="0.01" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="entry-type" class="form-label">Type</label>
+                                <select class="form-select" id="entry-type">
+                                    <option value="Expense">Expense</option>
+                                    <option value="Income">Income</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="entry-category" class="form-label">Category</label>
+                                <input type="text" class="form-control" id="entry-category" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="entry-date" class="form-label">Date</label>
+                                <input type="date" class="form-control" id="entry-date" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="entry-currency" class="form-label">Currency</label>
+                                <input type="text" class="form-control" id="entry-currency" value="NRs">
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
-    <script src="utility.js"></script>
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsPDF/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            applyTheme();
-            document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
-        });
+        // Global State
+        const state = {
+            tasks: parseMinifiedJSON(localStorage.getItem("tasks") || "[]"),
+            taskHistory: [],
+            taskRedoStack: [],
+            shoppingItems: parseMinifiedJSON(localStorage.getItem("shoppingItems") || "[]"),
+            itemHistory: [],
+            itemRedoStack: [],
+            spendingEntries: parseMinifiedJSON(localStorage.getItem("spendingEntries") || "[]"),
+            entryHistory: [],
+            entryRedoStack: [],
+            defaultCurrency: localStorage.getItem("defaultCurrency") || "NRs"
+        };
+
+        // Show Section
+        function showSection(sectionId) {
+            document.querySelectorAll(".section").forEach(section => {
+                section.classList.add("d-none");
+            });
+            document.getElementById(sectionId).classList.remove("d-none");
+            document.querySelectorAll(".nav-link").forEach(link => {
+                link.classList.remove("active");
+            });
+            document.querySelector(`.nav-link[href="#${sectionId}"]`).classList.add("active");
+            if (sectionId === "dashboard") loadDashboard();
+            else if (sectionId === "todo-list") loadTasks();
+            else if (sectionId === "shopping-list") loadItems();
+            else if (sectionId === "spending-tracker") loadEntries();
+        }
+
+        // Initialize
+        applyTheme();
+        showSection("dashboard");
     </script>
+    <script src="utility.js"></script>
+    <script src="todo-list.js"></script>
+    <script src="shopping-list.js"></script>
+    <script src="spending-tracker.js"></script>
 </body>
 </html>
