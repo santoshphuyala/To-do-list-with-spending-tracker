@@ -42,7 +42,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-translate="todoListTitle">Todo List</title>
+    <title>Todo List</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <link rel="icon" href="data:,">
     <style>
@@ -143,76 +143,68 @@
     </style>
 </head>
 <body class="container py-5">
-    <h2 class="text-center mb-4" data-translate="todoListTitle">Todo List</h2>
+    <h2 class="text-center mb-4">Todo List</h2>
 
     <!-- Action Buttons -->
     <div class="action-buttons">
         <div class="mb-3 d-flex justify-content-between align-items-center">
-            <a href="spending-tracker.html" class="btn btn-primary" data-translate="spendingTracker">Spending Tracker</a>
             <div>
-                <button class="btn btn-secondary me-2" id="themeToggleBtn" data-translate="toggleTheme">Toggle Theme</button>
-                <select id="languageToggle" class="form-select d-inline-block" style="width: auto;">
-                    <option value="en" data-translate="english">English</option>
-                    <option value="ne" data-translate="nepali">Nepali</option>
-                </select>
+                <a href="index.html" class="btn btn-primary">Home</a>
+            </div>
+            <div>
+                <button class="btn btn-secondary me-2" id="themeToggleBtn">Toggle Theme</button>
             </div>
         </div>
     </div>
 
     <!-- Category Filter Dropdown -->
     <div class="mb-3">
-        <label for="categoryFilter" class="form-label" data-translate="filterByCategory">Filter by Category</label>
+        <label for="categoryFilter" class="form-label">Filter by Category</label>
         <select id="categoryFilter" class="form-select" aria-label="Filter by category">
-            <option value="all" data-translate="allCategories">All Categories</option>
-            <option value="General" data-translate="general">General</option>
-            <option value="Work" data-translate="work">Work</option>
-            <option value="Personal" data-translate="personal">Personal</option>
+            <option value="all">All Categories</option>
+            <option value="General">General</option>
+            <option value="Work">Work</option>
+            <option value="Personal">Personal</option>
         </select>
     </div>
 
     <!-- Task Input Form -->
     <div class="input-group mb-3">
-        <input type="text" id="taskInput" class="form-control" placeholder="Add a new task" aria-label="Task description" data-translate-placeholder="addTaskPlaceholder">
-        <div class="invalid-feedback" data-translate="taskRequired">Please enter a task description.</div>
+        <input type="text" id="taskInput" class="form-control" placeholder="Add a new task" aria-label="Task description">
+        <div class="invalid-feedback">Please enter a task description.</div>
         <select id="taskCategory" class="form-select" aria-label="Task category">
-            <option value="General" data-translate="general">General</option>
-            <option value="Work" data-translate="work">Work</option>
-            <option value="Personal" data-translate="personal">Personal</option>
+            <option value="General">General</option>
+            <option value="Work">Work</option>
+            <option value="Personal">Personal</option>
         </select>
         <select id="taskPriority" class="form-select" aria-label="Task priority">
-            <option value="low" data-translate="low">Low</option>
-            <option value="medium" data-translate="medium">Medium</option>
-            <option value="high" data-translate="high">High</option>
-        </select>
-        <select id="taskRecurrence" class="form-select" aria-label="Task recurrence">
-            <option value="none" data-translate="none">None</option>
-            <option value="daily" data-translate="daily">Daily</option>
-            <option value="weekly" data-translate="weekly">Weekly</option>
-            <option value="monthly" data-translate="monthly">Monthly</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
         </select>
         <input type="date" id="taskDate" class="form-control" aria-label="Due date">
-        <button class="btn btn-primary" id="addTaskBtn" data-translate="addTask">Add Task</button>
-        <button class="btn btn-secondary btn-sm" id="clearDateBtn" data-translate="clearDate">Clear Date</button>
+        <button class="btn btn-primary" id="addTaskBtn">Add Task</button>
+        <button class="btn btn-secondary btn-sm" id="clearDateBtn">Clear Date</button>
     </div>
     <div class="mb-3">
-        <textarea id="taskNotes" class="form-control" placeholder="Add notes (optional)" aria-label="Task notes" rows="2" data-translate-placeholder="addNotesPlaceholder"></textarea>
+        <textarea id="taskNotes" class="form-control" placeholder="Add notes (optional)" aria-label="Task notes" rows="2"></textarea>
     </div>
 
     <!-- Sort and Filter Buttons -->
     <div class="mb-3 action-buttons">
-        <button class="btn btn-info" id="sortDateBtn" data-translate="sortByDate">Sort by Date</button>
-        <button class="btn btn-info" id="sortPriorityBtn" data-translate="sortByPriority">Sort by Priority</button>
-        <button class="btn btn-info" id="filterPendingBtn" data-translate="showPending">Show Pending</button>
-        <button class="btn btn-info" id="filterCompletedBtn" data-translate="showCompleted">Show Completed</button>
-        <button class="btn btn-info" id="filterAllBtn" data-translate="showAll">Show All</button>
-        <button class="btn btn-info" id="exportExcelBtn" data-translate="exportExcel">Export to Excel</button>
-        <button class="btn btn-secondary" id="sendEmailBtn" data-translate="emailTodoList">Email Todo List</button>
-        <button class="btn btn-success" id="markAllCompletedBtn" data-translate="markAllCompleted">Mark All Completed</button>
-        <button class="btn btn-danger" id="deleteAllBtn" data-translate="deleteAll">Delete All</button>
-        <button class="btn btn-warning" id="undoBtn" data-translate="undo">Undo</button>
-        <button class="btn btn-warning" id="redoBtn" data-translate="redo">Redo</button>
-        <button class="btn btn-primary" id="backupBtn" data-translate="backupData">Backup Data</button>
-        <button class="btn btn-primary" id="restoreBtn" data-translate="restoreData">Restore Data</button>
+        <button class="btn btn-info" id="sortDateBtn">Sort by Date</button>
+        <button class="btn btn-info" id="sortPriorityBtn">Sort by Priority</button>
+        <button class="btn btn-info" id="filterPendingBtn">Show Pending</button>
+        <button class="btn btn-info" id="filterCompletedBtn">Show Completed</button>
+        <button class="btn btn-info" id="filterAllBtn">Show All</button>
+        <button class="btn btn-info" id="exportExcelBtn">Export to Excel</button>
+        <button class="btn btn-secondary" id="sendEmailBtn">Email Todo List</button>
+        <button class="btn btn-success" id="markAllCompletedBtn">Mark All Completed</button>
+        <button class="btn btn-danger" id="deleteAllBtn">Delete All</button>
+        <button class="btn btn-warning" id="undoBtn">Undo</button>
+        <button class="btn btn-warning" id="redoBtn">Redo</button>
+        <button class="btn btn-primary" id="backupBtn">Backup Data</button>
+        <button class="btn btn-primary" id="restoreBtn">Restore Data</button>
     </div>
     <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
 
@@ -224,55 +216,46 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editTaskModalLabel" data-translate="editTask">Edit Task</h5>
+                    <h5 class="modal-title" id="editTaskModalLabel">Edit Task</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="editTaskInput" class="form-label" data-translate="taskDescription">Task Description</label>
+                        <label for="editTaskInput" class="form-label">Task Description</label>
                         <input type="text" id="editTaskInput" class="form-control" aria-label="Edit task description">
-                        <div class="invalid-feedback" data-translate="taskRequired">Task cannot be empty.</div>
+                        <div class="invalid-feedback">Task cannot be empty.</div>
                     </div>
                     <div class="mb-3">
-                        <label for="editTaskCategory" class="form-label" data-translate="category">Category</label>
+                        <label for="editTaskCategory" class="form-label">Category</label>
                         <select id="editTaskCategory" class="form-select" aria-label="Edit task category">
-                            <option value="General" data-translate="general">General</option>
-                            <option value="Work" data-translate="work">Work</option>
-                            <option value="Personal" data-translate="personal">Personal</option>
+                            <option value="General">General</option>
+                            <option value="Work">Work</option>
+                            <option value="Personal">Personal</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="editTaskPriority" class="form-label" data-translate="priority">Priority</label>
+                        <label for="editTaskPriority" class="form-label">Priority</label>
                         <select id="editTaskPriority" class="form-select" aria-label="Edit task priority">
-                            <option value="low" data-translate="low">Low</option>
-                            <option value="medium" data-translate="medium">Medium</option>
-                            <option value="high" data-translate="high">High</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="editTaskRecurrence" class="form-label" data-translate="recurrence">Recurrence</label>
-                        <select id="editTaskRecurrence" class="form-select" aria-label="Edit task recurrence">
-                            <option value="none" data-translate="none">None</option>
-                            <option value="daily" data-translate="daily">Daily</option>
-                            <option value="weekly" data-translate="weekly">Weekly</option>
-                            <option value="monthly" data-translate="monthly">Monthly</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="editTaskDate" class="form-label" data-translate="dueDate">Due Date</label>
+                        <label for="editTaskDate" class="form-label">Due Date</label>
                         <div class="input-group">
                             <input type="date" id="editTaskDate" class="form-control" aria-label="Edit due date">
-                            <button class="btn btn-secondary btn-sm" id="editClearDateBtn" data-translate="clearDate">Clear Date</button>
+                            <button class="btn btn-secondary btn-sm" id="editClearDateBtn">Clear Date</button>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="editTaskNotes" class="form-label" data-translate="notes">Notes</label>
+                        <label for="editTaskNotes" class="form-label">Notes</label>
                         <textarea id="editTaskNotes" class="form-control" aria-label="Edit task notes" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveEditBtn" data-translate="save">Save</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveEditBtn">Save</button>
                 </div>
             </div>
         </div>
@@ -283,16 +266,16 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="emailModalLabel" data-translate="sendTodoList">Send Todo List</h5>
+                    <h5 class="modal-title" id="emailModalLabel">Send Todo List</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="email" id="emailInput" class="form-control" placeholder="Enter recipient email" aria-label="Recipient email" data-translate-placeholder="emailPlaceholder">
-                    <div class="invalid-feedback" data-translate="invalidEmail">Please enter a valid email address.</div>
+                    <input type="email" id="emailInput" class="form-control" placeholder="Enter recipient email" aria-label="Recipient email">
+                    <div class="invalid-feedback">Please enter a valid email address.</div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="sendEmailConfirmBtn" data-translate="send">Send</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="sendEmailConfirmBtn">Send</button>
                 </div>
             </div>
         </div>
@@ -325,25 +308,6 @@
         return input.replace(/<[^>]+>/g, '');
     }
 
-    // Request notification permission
-    function requestNotificationPermission() {
-        if ('Notification' in window) {
-            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        console.log('Notification permission granted.');
-                    } else {
-                        console.log('Notification permission denied. Falling back to alerts.');
-                    }
-                }).catch(error => {
-                    console.error('Error requesting notification permission:', error);
-                });
-            }
-        } else {
-            console.log('Browser does not support notifications. Falling back to alerts.');
-        }
-    }
-
     // Debounce utility
     function debounce(func, delay) {
         let timeoutId;
@@ -366,7 +330,7 @@
             return true;
         } catch (e) {
             console.error('Storage capacity exceeded:', e);
-            alert(getTranslation("storageFull"));
+            alert("Storage capacity exceeded. Please clear some data.");
             return false;
         }
     }
@@ -380,26 +344,16 @@
             }
         } catch (e) {
             console.error("Failed to load tasks:", e);
-            alert(getTranslation("loadTasksFailed"));
+            alert("Failed to load tasks. Please try again.");
         }
         document.getElementById("taskDate").value = new Date().toISOString().split("T")[0];
         applyTheme();
-        applyTranslations();
         initializeEventListeners();
-        requestNotificationPermission();
         loadTasks();
-        checkDueDates();
     });
 
-    // Theme and Language Toggle
-    document.getElementById("themeToggleBtn").addEventListener("click", () => {
-        toggleTheme();
-        applyTranslations();
-    });
-
-    document.getElementById("languageToggle").addEventListener("change", () => {
-        applyTranslations();
-    });
+    // Theme Toggle
+    document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
 
     /**
      * Initializes all event listeners for buttons and inputs.
@@ -448,7 +402,7 @@
             localStorage.setItem("tasks", minifyJSON(state.tasks));
         } catch (e) {
             console.error("Failed to save tasks:", e);
-            alert(getTranslation("saveTasksFailed"));
+            alert("Failed to save tasks. Please try again.");
         }
     }
 
@@ -472,7 +426,6 @@
         const taskDate = document.getElementById("taskDate").value;
         const category = document.getElementById("taskCategory").value;
         const priority = document.getElementById("taskPriority").value;
-        const recurrence = document.getElementById("taskRecurrence").value;
         const notes = document.getElementById("taskNotes").value.trim();
 
         if (!taskText) {
@@ -488,7 +441,6 @@
                 date: taskDate || null,
                 category,
                 priority,
-                recurrence,
                 notes: sanitizeInput(notes),
                 completed: false
             });
@@ -497,7 +449,7 @@
             loadTasks();
         } catch (e) {
             console.error("Failed to add task:", e);
-            alert(getTranslation("addTaskFailed"));
+            alert("Failed to add task. Please try again.");
         }
     }
 
@@ -510,7 +462,6 @@
         taskInput.classList.remove("is-invalid");
         document.getElementById("taskCategory").value = "General";
         document.getElementById("taskPriority").value = "low";
-        document.getElementById("taskRecurrence").value = "none";
         document.getElementById("taskDate").value = new Date().toISOString().split("T")[0];
         document.getElementById("taskNotes").value = "";
     }
@@ -546,26 +497,26 @@
                 const taskInfo = document.createElement("div");
                 taskInfo.className = "d-flex justify-content-between align-items-center";
                 const taskText = document.createElement("span");
-                taskText.textContent = `${task.text} - ${task.date || getTranslation("noDueDate")} (${getTranslation(task.category.toLowerCase()) || task.category}, ${getTranslation(task.priority.toLowerCase()) || task.priority}, ${getTranslation(task.recurrence.toLowerCase()) || task.recurrence})`;
+                taskText.textContent = `${task.text} - ${task.date || "No Due Date"} (${task.category}, ${task.priority})`;
                 taskInfo.appendChild(taskText);
 
                 const buttonGroup = document.createElement("div");
                 const completeBtn = document.createElement("button");
                 completeBtn.className = "btn btn-success btn-sm me-2";
                 completeBtn.textContent = "✔";
-                completeBtn.setAttribute("aria-label", getTranslation("markCompleted"));
+                completeBtn.setAttribute("aria-label", "Mark Completed");
                 completeBtn.onclick = () => markCompleted(index);
 
                 const editBtn = document.createElement("button");
                 editBtn.className = "btn btn-warning btn-sm me-2";
                 editBtn.textContent = "✏";
-                editBtn.setAttribute("aria-label", getTranslation("editTask"));
+                editBtn.setAttribute("aria-label", "Edit Task");
                 editBtn.onclick = () => editTask(index);
 
                 const deleteBtn = document.createElement("button");
                 deleteBtn.className = "btn btn-danger btn-sm";
                 deleteBtn.textContent = "🗑";
-                deleteBtn.setAttribute("aria-label", getTranslation("deleteTask"));
+                deleteBtn.setAttribute("aria-label", "Delete Task");
                 deleteBtn.onclick = () => deleteTask(index);
 
                 buttonGroup.append(completeBtn, editBtn, deleteBtn);
@@ -577,7 +528,7 @@
                     notesSection.className = "mt-2";
                     const notesToggle = document.createElement("button");
                     notesToggle.className = "btn btn-link btn-sm";
-                    notesToggle.textContent = getTranslation("showNotes");
+                    notesToggle.textContent = "Show Notes";
                     notesToggle.setAttribute("data-bs-toggle", "collapse");
                     notesToggle.setAttribute("data-bs-target", `#notes-${index}`);
                     const notesContent = document.createElement("div");
@@ -607,7 +558,7 @@
             loadTasks();
         } catch (e) {
             console.error("Failed to mark task completed:", e);
-            alert(getTranslation("updateTaskFailed"));
+            alert("Failed to update task. Please try again.");
         }
     }
 
@@ -623,7 +574,6 @@
         editInput.classList.remove("is-invalid");
         document.getElementById("editTaskCategory").value = task.category;
         document.getElementById("editTaskPriority").value = task.priority;
-        document.getElementById("editTaskRecurrence").value = task.recurrence;
         document.getElementById("editTaskDate").value = task.date || "";
         document.getElementById("editTaskNotes").value = task.notes || "";
         new bootstrap.Modal(document.getElementById("editTaskModal")).show();
@@ -637,7 +587,6 @@
         const newText = editInput.value.trim();
         const newCategory = document.getElementById("editTaskCategory").value;
         const newPriority = document.getElementById("editTaskPriority").value;
-        const newRecurrence = document.getElementById("editTaskRecurrence").value;
         const newDate = document.getElementById("editTaskDate").value;
         const newNotes = document.getElementById("editTaskNotes").value.trim();
 
@@ -653,7 +602,6 @@
                 text: sanitizeInput(newText),
                 category: newCategory,
                 priority: newPriority,
-                recurrence: newRecurrence,
                 date: newDate || null,
                 notes: sanitizeInput(newNotes)
             };
@@ -663,7 +611,7 @@
         } catch (e) {
             console.error("Failed to save edited task:", e);
             editInput.classList.add("is-invalid");
-            alert(getTranslation("saveTaskFailed"));
+            alert("Failed to save task. Please try again.");
         }
     }
 
@@ -679,7 +627,7 @@
             loadTasks();
         } catch (e) {
             console.error("Failed to delete task:", e);
-            alert(getTranslation("deleteTaskFailed"));
+            alert("Failed to delete task. Please try again.");
         }
     }
 
@@ -694,7 +642,7 @@
             loadTasks();
         } catch (e) {
             console.error("Failed to mark all tasks completed:", e);
-            alert(getTranslation("updateTasksFailed"));
+            alert("Failed to update tasks. Please try again.");
         }
     }
 
@@ -702,7 +650,7 @@
      * Deletes all tasks after confirmation.
      */
     function deleteAllTasks() {
-        if (confirm(getTranslation("confirmDeleteAll"))) {
+        if (confirm("Are you sure you want to delete all tasks?")) {
             try {
                 saveState();
                 state.tasks = [];
@@ -710,7 +658,7 @@
                 loadTasks();
             } catch (e) {
                 console.error("Failed to delete all tasks:", e);
-                alert(getTranslation("deleteTasksFailed"));
+                alert("Failed to delete all tasks. Please try again.");
             }
         }
     }
@@ -727,10 +675,10 @@
                 loadTasks();
             } catch (e) {
                 console.error("Failed to undo action:", e);
-                alert(getTranslation("undoFailed"));
+                alert("Failed to undo action. Please try again.");
             }
         } else {
-            alert(getTranslation("noUndo"));
+            alert("Nothing to undo.");
         }
     }
 
@@ -746,10 +694,10 @@
                 loadTasks();
             } catch (e) {
                 console.error("Failed to redo action:", e);
-                alert(getTranslation("redoFailed"));
+                alert("Failed to redo action. Please try again.");
             }
         } else {
-            alert(getTranslation("noRedo"));
+            alert("Nothing to redo.");
         }
     }
 
@@ -777,7 +725,7 @@
             loadTasks();
         } catch (e) {
             console.error("Failed to sort tasks:", e);
-            alert(getTranslation("sortTasksFailed"));
+            alert("Failed to sort tasks. Please try again.");
         }
     }
 
@@ -806,20 +754,20 @@
      */
     function exportToExcel() {
         if (state.tasks.length === 0) {
-            alert(getTranslation("noTasksToExport"));
+            alert("No tasks to export.");
             return;
         }
         try {
             const worksheet = XLSX.utils.json_to_sheet(state.tasks.map(task => ({
                 ...task,
-                notes: task.notes || getTranslation("none")
+                notes: task.notes || "None"
             })));
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Todo List");
             XLSX.writeFile(workbook, "Todo_List.xlsx");
         } catch (e) {
             console.error("Export failed:", e);
-            alert(getTranslation("exportFailed"));
+            alert("Failed to export tasks. Please try again.");
         }
     }
 
@@ -828,7 +776,7 @@
      */
     function openEmailModal() {
         if (state.tasks.length === 0) {
-            alert(getTranslation("noTasksToSend"));
+            alert("No tasks to send.");
             return;
         }
         document.getElementById("emailInput").value = "";
@@ -848,49 +796,10 @@
             return;
         }
         const taskListText = state.tasks.map(task =>
-            `${task.text} - ${task.date || getTranslation("noDueDate")} (${getTranslation(task.category.toLowerCase()) || task.category}, ${getTranslation(task.priority.toLowerCase()) || task.priority}, ${getTranslation(task.recurrence.toLowerCase()) || task.recurrence}, ${task.completed ? getTranslation("completed") : getTranslation("pending")})\n${getTranslation("notes")}: ${task.notes || getTranslation("none")}`
+            `${task.text} - ${task.date || "No Due Date"} (${task.category}, ${task.priority}, ${task.completed ? "Completed" : "Pending"})\nNotes: ${task.notes || "None"}`
         ).join("\n\n");
         window.location.href = `mailto:${email}?subject=Todo List&body=${encodeURIComponent(taskListText)}`;
         bootstrap.Modal.getInstance(document.getElementById("emailModal")).hide();
-    }
-
-    /**
-     * Checks for tasks due today and handles recurring tasks with browser notifications.
-     */
-    function checkDueDates() {
-        const today = new Date().toISOString().split("T")[0];
-        state.tasks.forEach((task, index) => {
-            if (!task.completed && task.date === today) {
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification(getTranslation("taskDueToday"), {
-                        body: `${getTranslation("reminder")}: ${task.text} ${getTranslation("isDueToday")}!`,
-                        icon: 'https://via.placeholder.com/32'
-                    });
-                } else {
-                    alert(`${getTranslation("reminder")}: ${task.text} ${getTranslation("isDueToday")}!`);
-                }
-            }
-            if (task.date && task.recurrence !== "none" && new Date(task.date) < new Date(today)) {
-                const newDate = new Date(task.date);
-                if (task.recurrence === "daily") {
-                    newDate.setDate(newDate.getDate() + 1);
-                } else if (task.recurrence === "weekly") {
-                    newDate.setDate(newDate.getDate() + 7);
-                } else if (task.recurrence === "monthly") {
-                    newDate.setMonth(newDate.getMonth() + 1);
-                }
-                saveState();
-                state.tasks.push({
-                    ...task,
-                    date: newDate.toISOString().split("T")[0],
-                    completed: false
-                });
-                state.tasks[index].completed = true;
-            }
-        });
-        saveTasks();
-        loadTasks();
-        setTimeout(checkDueDates, 5 * 60 * 1000);
     }
 
     /**
@@ -911,7 +820,7 @@
             URL.revokeObjectURL(url);
         } catch (e) {
             console.error("Failed to backup data:", e);
-            alert(getTranslation("backupFailed"));
+            alert("Failed to backup data. Please try again.");
         }
     }
 
@@ -937,7 +846,6 @@
                     date: task.date && typeof task.date === "string" ? task.date : null,
                     category: ["General", "Work", "Personal"].includes(task.category) ? task.category : "General",
                     priority: ["low", "medium", "high"].includes(task.priority) ? task.priority : "low",
-                    recurrence: ["none", "daily", "weekly", "monthly"].includes(task.recurrence) ? task.recurrence : "none",
                     notes: sanitizeInput(task.notes || ""),
                     completed: typeof task.completed === "boolean" ? task.completed : false
                 })).filter(task => task.text.trim() !== "");
@@ -953,7 +861,6 @@
                         date: task.date,
                         category: task.category,
                         priority: task.priority,
-                        recurrence: task.recurrence,
                         notes: task.notes,
                         completed: task.completed
                     });
@@ -965,7 +872,6 @@
                         date: task.date,
                         category: task.category,
                         priority: task.priority,
-                        recurrence: task.recurrence,
                         notes: task.notes,
                         completed: task.completed
                     });
@@ -982,10 +888,10 @@
                 state.redoStack = [];
                 saveTasks();
                 loadTasks();
-                alert(`${getTranslation("dataRestored")} ${sanitizedRestoredTasks.length} ${getTranslation("tasksProcessed")}, ${mergedTasks.length - state.tasks.length} ${getTranslation("newTasksAdded")}.`);
+                alert(`Data restored successfully. ${sanitizedRestoredTasks.length} tasks processed, ${mergedTasks.length - state.tasks.length} new tasks added.`);
             } catch (e) {
                 console.error("Failed to restore data:", e);
-                alert(getTranslation("restoreFailed"));
+                alert("Failed to restore data. Please try again.");
             } finally {
                 document.getElementById("restoreFileInput").value = "";
             }

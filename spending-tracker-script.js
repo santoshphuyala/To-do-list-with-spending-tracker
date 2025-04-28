@@ -11,12 +11,12 @@
             const budgetOverview = document.getElementById("budgetOverview");
             budgetOverview.innerHTML = "";
             if (Object.keys(state.budgets).length === 0) {
-                budgetOverview.textContent = getTranslation("noBudgetSet");
+                budgetOverview.textContent = "No budget set.";
             } else {
                 Object.keys(state.budgets).forEach(category => {
                     const spent = calculateMonthlyExpenses(category);
                     const p = document.createElement("p");
-                    p.textContent = `${getTranslation("budgetFor")} ${category}: ${state.budgets[category].toFixed(2)} ${localStorage.getItem("defaultCurrency") || "NRs"} (Spent: ${spent.toFixed(2)})`;
+                    p.textContent = `Budget for ${category}: ${state.budgets[category].toFixed(2)} ${localStorage.getItem("defaultCurrency") || "NRs"} (Spent: ${spent.toFixed(2)})`;
                     budgetOverview.appendChild(p);
                 });
             }
@@ -136,7 +136,7 @@
                         },
                         title: {
                             display: true,
-                            text: getTranslation("categoryWiseExpenses"),
+                            text: "Category-wise Expenses",
                             color: chartTextColor
                         }
                     }
@@ -171,14 +171,14 @@
                     labels: Object.keys(monthlyData),
                     datasets: [
                         {
-                            label: getTranslation("incomeLabel"),
+                            label: "Income",
                             data: Object.values(monthlyData).map(d => d.income),
                             borderColor: isDarkMode ? "#28a745" : "#28a745",
                             backgroundColor: isDarkMode ? "rgba(40, 167, 69, 0.2)" : "rgba(40, 167, 69, 0.2)",
                             fill: true
                         },
                         {
-                            label: getTranslation("expenses"),
+                            label: "Expenses",
                             data: Object.values(monthlyData).map(d => d.expenses),
                             borderColor: isDarkMode ? "#dc3545" : "#dc3545",
                             backgroundColor: isDarkMode ? "rgba(220, 53, 69, 0.2)" : "rgba(220, 53, 69, 0.2)",
@@ -204,7 +204,7 @@
                         },
                         title: {
                             display: true,
-                            text: getTranslation("monthlyTrends"),
+                            text: "Monthly Trends",
                             color: chartTextColor
                         }
                     }
@@ -231,8 +231,8 @@
 
             if (monthlyTrendsChart) {
                 monthlyTrendsChart.data.datasets.forEach(dataset => {
-                    dataset.borderColor = dataset.label === getTranslation("incomeLabel") ? (isDarkMode ? "#28a745" : "#28a745") : (isDarkMode ? "#dc3545" : "#dc3545");
-                    dataset.backgroundColor = dataset.label === getTranslation("incomeLabel") ? (isDarkMode ? "rgba(40, 167, 69, 0.2)" : "rgba(40, 167, 69, 0.2)") : (isDarkMode ? "rgba(220, 53, 69, 0.2)" : "rgba(220, 53, 69, 0.2)");
+                    dataset.borderColor = dataset.label === "Income" ? (isDarkMode ? "#28a745" : "#28a745") : (isDarkMode ? "#dc3545" : "#dc3545");
+                    dataset.backgroundColor = dataset.label === "Income" ? (isDarkMode ? "rgba(40, 167, 69, 0.2)" : "rgba(40, 167, 69, 0.2)") : (isDarkMode ? "rgba(220, 53, 69, 0.2)" : "rgba(220, 53, 69, 0.2)");
                 });
                 monthlyTrendsChart.options.scales.x.title.color = chartTextColor;
                 monthlyTrendsChart.options.scales.y.title.color = chartTextColor;
@@ -267,26 +267,25 @@
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${entry.date}</td>
-                    <td>${getTranslation(entry.type.toLowerCase())}</td>
+                    <td>${entry.type}</td>
                     <td>${entry.category}</td>
                     <td>${convertToDefaultCurrency(entry.amount, entry.currency).toFixed(2)} ${localStorage.getItem("defaultCurrency") || "NRs"}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary edit-spending-btn me-1" data-index="${index}" data-translate="edit">Edit</button>
-                        <button class="btn btn-sm btn-danger delete-spending-btn" data-index="${index}" data-translate="delete">Delete</button>
+                        <button class="btn btn-sm btn-primary edit-spending-btn me-1">Edit</button>
+                        <button class="btn btn-sm btn-danger delete-spending-btn">Delete</button>
                     </td>
                 `;
                 entriesList.appendChild(row);
             });
 
-            document.querySelectorAll(".edit-spending-btn").forEach(btn => {
+            document.querySelectorAll(".edit-spending-btn").forEach((btn, idx) => {
                 btn.addEventListener("click", () => {
-                    const index = btn.getAttribute("data-index");
-                    const entry = state.spendingEntries[index];
+                    const index = filteredEntries[idx];
+                    const entry = state.spendingEntries[state.spendingEntries.indexOf(index)];
                     document.getElementById("editSpendingAmount").value = entry.amount;
                     document.getElementById("editSpendingType").value = entry.type;
                     document.getElementById("editSpendingCategory").value = entry.category;
                     document.getElementById("editSpendingDate").value = entry.date;
-                    document.getElementById("editSpendingRecurrence").value = entry.recurrence || "none";
                     document.getElementById("editSpendingCurrency").value = entry.currency;
                     const modal = new bootstrap.Modal(document.getElementById("editSpendingModal"));
                     modal.show();
@@ -297,14 +296,13 @@
                             document.getElementById("editSpendingAmount").classList.add("is-invalid");
                             return;
                         }
+                        const index = state.spendingEntries.indexOf(entry);
                         state.spendingEntries[index] = {
                             amount,
                             type: document.getElementById("editSpendingType").value,
                             category: document.getElementById("editSpendingCategory").value,
                             date: document.getElementById("editSpendingDate").value,
-                            recurrence: document.getElementById("editSpendingRecurrence").value,
-                            currency: document.getElementById("editSpendingCurrency").value,
-                            recurring: document.getElementById("editSpendingRecurrence").value !== "none"
+                            currency: document.getElementById("editSpendingCurrency").value
                         };
                         saveSpendingEntries();
                         showManageEntries();
@@ -314,9 +312,10 @@
                 });
             });
 
-            document.querySelectorAll(".delete-spending-btn").forEach(btn => {
+            document.querySelectorAll(".delete-spending-btn").forEach((btn, idx) => {
                 btn.addEventListener("click", () => {
-                    const index = btn.getAttribute("data-index");
+                    const entry = filteredEntries[idx];
+                    const index = state.spendingEntries.indexOf(entry);
                     state.spendingEntries.splice(index, 1);
                     saveSpendingEntries();
                     showManageEntries();
@@ -342,36 +341,6 @@
                 .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
         }
 
-        function checkBudgetAlerts(category) {
-            if (!state.budgets[category]) return;
-            const now = new Date();
-            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-            const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-            const monthlyExpenses = state.spendingEntries
-                .filter(entry => {
-                    const entryDate = new Date(entry.date);
-                    return entry.type === "Expense" &&
-                           entry.category === category &&
-                           entryDate >= monthStart &&
-                           entryDate <= monthEnd;
-                })
-                .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-            if (monthlyExpenses > state.budgets[category]) {
-                const message = getTranslation("budgetExceeded")
-                    .replace("{category}", category)
-                    .replace("{spent}", monthlyExpenses.toFixed(2))
-                    .replace("{budget}", state.budgets[category].toFixed(2));
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification('Budget Alert', {
-                        body: message,
-                        icon: 'https://cdn-icons-png.flaticon.com/32/948/948739.png'
-                    });
-                } else {
-                    alert(message);
-                }
-            }
-        }
-
         function addSpendingEntry() {
             const amountInput = document.getElementById("spendingAmount");
             const amount = parseFloat(amountInput.value);
@@ -386,17 +355,13 @@
                 type: document.getElementById("spendingType").value,
                 category: document.getElementById("spendingCategory").value,
                 date: document.getElementById("spendingDate").value,
-                recurrence: document.getElementById("spendingRecurrence").value,
-                currency: document.getElementById("spendingCurrency").value,
-                recurring: document.getElementById("spendingRecurrence").value !== "none"
+                currency: document.getElementById("spendingCurrency").value
             };
 
             try {
                 state.spendingEntries.push(entry);
                 saveSpendingEntries();
-                checkBudgetAlerts(entry.category);
                 amountInput.value = "";
-                document.getElementById("spendingRecurrence").value = "none";
                 const modal = bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal"));
                 modal.hide();
             } catch (e) {
@@ -409,11 +374,10 @@
             try {
                 const data = state.spendingEntries.map(entry => ({
                     Date: entry.date,
-                    Type: getTranslation(entry.type.toLowerCase()),
+                    Type: entry.type,
                     Category: entry.category,
                     Amount: convertToDefaultCurrency(entry.amount, entry.currency).toFixed(2),
-                    Currency: localStorage.getItem("defaultCurrency") || "NRs",
-                    Recurrence: entry.recurrence
+                    Currency: localStorage.getItem("defaultCurrency") || "NRs"
                 }));
                 const ws = XLSX.utils.json_to_sheet(data);
                 const wb = XLSX.utils.book_new();
@@ -430,27 +394,27 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 doc.setFontSize(16);
-                doc.text(getTranslation("viewSummary"), 10, 10);
+                doc.text("View Summary", 10, 10);
                 let y = 20;
 
                 // Budget Overview
                 doc.setFontSize(12);
-                doc.text(getTranslation("budgetTitle"), 10, y);
+                doc.text("Set Monthly Budget", 10, y);
                 y += 10;
                 if (Object.keys(state.budgets).length === 0) {
-                    doc.text(getTranslation("noBudgetSet"), 10, y);
+                    doc.text("No budget set.", 10, y);
                     y += 10;
                 } else {
                     Object.keys(state.budgets).forEach(category => {
                         const spent = calculateMonthlyExpenses(category);
-                        doc.text(`${getTranslation("budgetFor")} ${category}: ${state.budgets[category].toFixed(2)} ${localStorage.getItem("defaultCurrency") || "NRs"} (Spent: ${spent.toFixed(2)})`, 10, y);
+                        doc.text(`Budget for ${category}: ${state.budgets[category].toFixed(2)} ${localStorage.getItem("defaultCurrency") || "NRs"} (Spent: ${spent.toFixed(2)})`, 10, y);
                         y += 10;
                     });
                 }
                 y += 10;
 
                 // Weekly Summary
-                doc.text(getTranslation("weeklySummary"), 10, y);
+                doc.text("Weekly Summary", 10, y);
                 y += 10;
                 const weeklyData = [];
                 const weeklyRows = document.getElementById("weeklySummary").children;
@@ -465,13 +429,13 @@
                 }
                 doc.autoTable({
                     startY: y,
-                    head: [[getTranslation("day"), getTranslation("incomeLabel"), getTranslation("expenses"), getTranslation("balance")]],
+                    head: [["Day", "Income", "Expenses", "Balance"]],
                     body: weeklyData
                 });
                 y = doc.lastAutoTable.finalY + 10;
 
                 // Monthly Summary
-                doc.text(getTranslation("monthlySummary"), 10, y);
+                doc.text("Monthly Summary", 10, y);
                 y += 10;
                 const monthlyData = [];
                 const monthlyRows = document.getElementById("monthlySummary").children;
@@ -485,13 +449,13 @@
                 }
                 doc.autoTable({
                     startY: y,
-                    head: [[getTranslation("totalIncome"), getTranslation("totalExpenses"), getTranslation("netBalance")]],
+                    head: [["Total Income", "Total Expenses", "Net Balance"]],
                     body: monthlyData
                 });
                 y = doc.lastAutoTable.finalY + 10;
 
                 // Yearly Summary
-                doc.text(getTranslation("yearlySummary"), 10, y);
+                doc.text("Yearly Summary", 10, y);
                 y += 10;
                 const yearlyData = [];
                 const yearlyRows = document.getElementById("yearlySummary").children;
@@ -505,7 +469,7 @@
                 }
                 doc.autoTable({
                     startY: y,
-                    head: [[getTranslation("totalIncome"), getTranslation("totalExpenses"), getTranslation("netBalance")]],
+                    head: [["Total Income", "Total Expenses", "Net Balance"]],
                     body: yearlyData
                 });
 
@@ -518,12 +482,12 @@
 
         function openSetBudgetModal() {
             const budgetInputs = document.getElementById("budgetInputs");
-            budgetInputs.innerHTML = `<p data-translate="budgetOptional">${getTranslation("budgetOptional")}</p>`;
+            budgetInputs.innerHTML = `<p>Budgets are optional. Leave blank to remove.</p>`;
             state.categories.forEach(category => {
                 const div = document.createElement("div");
                 div.className = "mb-3";
                 div.innerHTML = `
-                    <label for="budget-${category}" class="form-label">${getTranslation("budgetFor")} ${category}</label>
+                    <label for="budget-${category}" class="form-label">Budget for ${category}</label>
                     <input type="number" id="budget-${category}" class="form-control" value="${state.budgets[category] || ''}" min="0" step="0.01" placeholder="Enter budget for ${category}">
                 `;
                 budgetInputs.appendChild(div);
@@ -562,7 +526,7 @@
                 li.className = "list-group-item d-flex justify-content-between align-items-center";
                 li.innerHTML = `
                     ${category}
-                    <button class="btn btn-sm btn-danger delete-category-btn" data-category="${category}" data-translate="delete">Delete</button>
+                    <button class="btn btn-sm btn-danger delete-category-btn" data-category="${category}">Delete</button>
                 `;
                 categoryList.appendChild(li);
             });
@@ -576,19 +540,19 @@
                             entry.category = "Other";
                         }
                     });
-                    state.shoppingItems.forEach(item => {
-                        if (item.category === category) {
-                            item.category = "Other";
-                        }
-                    });
                     delete state.budgets[category];
                     saveCategories();
                     saveSpendingEntries();
-                    saveShoppingItems();
                     localStorage.setItem("spendingBudgets", minifyJSON(state.budgets));
                     populateCategoryList();
                 });
             });
+        }
+
+        function saveCategories() {
+            const customCategories = state.categories.filter(cat => !defaultCategories.includes(cat));
+            localStorage.setItem("spendingCategories", minifyJSON(customCategories));
+            populateCategoryDropdowns();
         }
 
         function addCategory() {
@@ -609,154 +573,12 @@
             newCategoryInput.classList.remove("is-invalid");
         }
 
-        function openShoppingListModal() {
-            displayShoppingItems();
-            const modal = new bootstrap.Modal(document.getElementById("shoppingListModal"));
-            modal.show();
-        }
-
-        function displayShoppingItems() {
-            const shoppingListItems = document.getElementById("shoppingListItems");
-            shoppingListItems.innerHTML = "";
-
-            const searchQuery = document.getElementById("searchShoppingItems").value.toLowerCase();
-            const filterCategory = document.getElementById("filterShoppingCategory").value;
-            const filterPurchased = document.getElementById("filterPurchased").value;
-
-            let filteredItems = state.shoppingItems.filter(item => {
-                const matchesSearch = item.name.toLowerCase().includes(searchQuery);
-                const matchesCategory = filterCategory === "all" || item.category === filterCategory;
-                const matchesPurchased = filterPurchased === "all" ||
-                                         (filterPurchased === "purchased" && item.purchased) ||
-                                         (filterPurchased === "not-purchased" && !item.purchased);
-                return matchesSearch && matchesCategory && matchesPurchased;
-            });
-
-            filteredItems.forEach((item, index) => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td class="${item.purchased ? 'shopping-item-purchased' : ''}">${item.name}</td>
-                    <td>${item.category}</td>
-                    <td>${item.quantity}</td>
-                    <td>${item.purchased ? getTranslation("purchased") : getTranslation("notPurchased")}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary edit-shopping-btn me-1" data-index="${index}" data-translate="edit">Edit</button>
-                        <button class="btn btn-sm btn-danger delete-shopping-btn me-1" data-index="${index}" data-translate="delete">Delete</button>
-                        ${!item.purchased ? `<button class="btn btn-sm btn-success mark-purchased-btn" data-index="${index}" data-translate="purchased">Mark Purchased</button>` : ''}
-                    </td>
-                `;
-                shoppingListItems.appendChild(row);
-            });
-
-            document.querySelectorAll(".edit-shopping-btn").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    const index = btn.getAttribute("data-index");
-                    const item = state.shoppingItems[index];
-                    document.getElementById("editShoppingItemName").value = item.name;
-                    document.getElementById("editShoppingItemCategory").value = item.category;
-                    document.getElementById("editShoppingItemQuantity").value = item.quantity;
-                    document.getElementById("editShoppingItemPurchased").checked = item.purchased;
-                    const modal = new bootstrap.Modal(document.getElementById("editShoppingItemModal"));
-                    modal.show();
-
-                    document.getElementById("saveEditShoppingItemBtn").onclick = () => {
-                        const name = DOMPurify.sanitize(document.getElementById("editShoppingItemName").value.trim());
-                        if (!name) {
-                            document.getElementById("editShoppingItemName").classList.add("is-invalid");
-                            return;
-                        }
-                        state.shoppingItems[index] = {
-                            name,
-                            category: document.getElementById("editShoppingItemCategory").value,
-                            quantity: parseInt(document.getElementById("editShoppingItemQuantity").value),
-                            purchased: document.getElementById("editShoppingItemPurchased").checked
-                        };
-                        saveShoppingItems();
-                        displayShoppingItems();
-                        modal.hide();
-                    };
-                });
-            });
-
-            document.querySelectorAll(".delete-shopping-btn").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    const index = btn.getAttribute("data-index");
-                    state.shoppingItems.splice(index, 1);
-                    saveShoppingItems();
-                    displayShoppingItems();
-                });
-            });
-
-            document.querySelectorAll(".mark-purchased-btn").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    const index = btn.getAttribute("data-index");
-                    const item = state.shoppingItems[index];
-                    document.getElementById("addPurchaseExpenseModalLabel").textContent = getTranslation("addPurchaseExpense");
-                    document.getElementById("purchaseItemInfo").textContent = getTranslation("enterAmountSpent")
-                        .replace("{item}", item.name)
-                        .replace("{quantity}", item.quantity);
-                    const modal = new bootstrap.Modal(document.getElementById("addPurchaseExpenseModal"));
-                    modal.show();
-
-                    document.getElementById("confirmPurchaseBtn").onclick = () => {
-                        const amount = parseFloat(document.getElementById("purchaseAmount").value);
-                        if (isNaN(amount) || amount <= 0) {
-                            document.getElementById("purchaseAmount").classList.add("is-invalid");
-                            return;
-                        }
-                        state.shoppingItems[index].purchased = true;
-                        state.spendingEntries.push({
-                            amount,
-                            type: "Expense",
-                            category: item.category,
-                            date: new Date().toISOString().split("T")[0],
-                            recurrence: "none",
-                            currency: localStorage.getItem("defaultCurrency") || "NRs",
-                            recurring: false
-                        });
-                        saveShoppingItems();
-                        saveSpendingEntries();
-                        checkBudgetAlerts(item.category);
-                        displayShoppingItems();
-                        modal.hide();
-                    };
-                });
-            });
-        }
-
-        function addShoppingItem() {
-            const nameInput = document.getElementById("shoppingItemName");
-            const name = DOMPurify.sanitize(nameInput.value.trim());
-            if (!name) {
-                nameInput.classList.add("is-invalid");
-                return;
-            }
-            nameInput.classList.remove("is-invalid");
-
-            const item = {
-                name,
-                category: document.getElementById("shoppingItemCategory").value,
-                quantity: parseInt(document.getElementById("shoppingItemQuantity").value),
-                purchased: false
-            };
-            state.shoppingItems.push(item);
-            saveShoppingItems();
-            nameInput.value = "";
-            document.getElementById("shoppingItemQuantity").value = 1;
-            displayShoppingItems();
-        }
-
         // Event Listeners
         document.addEventListener("DOMContentLoaded", () => {
             // Load saved data
             const savedEntries = localStorage.getItem("spendingEntries");
             if (savedEntries) {
                 state.spendingEntries = parseMinifiedJSON(savedEntries);
-            }
-
-            const savedShoppingItems = localStorage.getItem("shoppingItems");
-            if (savedShoppingItems) {
-                state.shoppingItems = parseMinifiedJSON(savedShoppingItems);
             }
 
             const savedCategories = localStorage.getItem("spendingCategories");
@@ -770,9 +592,8 @@
                 state.budgets = parseMinifiedJSON(savedBudgets);
             }
 
-            // Apply theme and translations
+            // Apply theme
             applyTheme();
-            applyTranslations();
             populateCategoryDropdowns();
 
             // Set default dates
@@ -793,30 +614,6 @@
                 document.getElementById("editSpendingCurrency").value = newCurrency;
                 showManageEntries();
                 showSpendingSummary();
-                displayShoppingItems();
-            });
-
-            // Language toggle
-            document.getElementById("languageToggle").addEventListener("change", () => {
-                applyTranslations();
-                populateCategoryDropdowns();
-                if (categoryPieChart) {
-                    categoryPieChart.options.plugins.title.text = getTranslation("categoryWiseExpenses");
-                    categoryPieChart.update();
-                }
-                if (monthlyTrendsChart) {
-                    monthlyTrendsChart.options.plugins.title.text = getTranslation("monthlyTrends");
-                    monthlyTrendsChart.data.datasets[0].label = getTranslation("incomeLabel");
-                    monthlyTrendsChart.data.datasets[1].label = getTranslation("expenses");
-                    monthlyTrendsChart.update();
-                }
-                // Refresh open modals
-                if (bootstrap.Modal.getInstance(document.getElementById("manageEntriesModal"))?.isShown) {
-                    showManageEntries();
-                }
-                if (bootstrap.Modal.getInstance(document.getElementById("shoppingListModal"))?.isShown) {
-                    displayShoppingItems();
-                }
             });
 
             // Theme toggle
@@ -855,35 +652,4 @@
             // Manage Categories
             document.getElementById("manageCategoriesBtn").addEventListener("click", openManageCategoriesModal);
             document.getElementById("addCategoryBtn").addEventListener("click", addCategory);
-
-            // Shopping List
-            document.getElementById("shoppingListBtn").addEventListener("click", openShoppingListModal);
-            document.getElementById("addShoppingItemBtn").addEventListener("click", addShoppingItem);
-            document.getElementById("searchShoppingItems").addEventListener("input", debounce(displayShoppingItems, 300));
-            document.getElementById("filterShoppingCategory").addEventListener("change", displayShoppingItems);
-            document.getElementById("filterPurchased").addEventListener("change", displayShoppingItems);
-
-            // Notifications
-            document.getElementById("requestNotificationBtn").addEventListener("click", () => {
-                if ('Notification' in window) {
-                    if (Notification.permission === 'granted') {
-                        alert(getTranslation("notificationsEnabled"));
-                    } else if (Notification.permission !== 'denied') {
-                        Notification.requestPermission().then(permission => {
-                            if (permission === 'granted') {
-                                alert("Notifications enabled!");
-                            } else {
-                                alert(getTranslation("notificationsDenied"));
-                            }
-                        });
-                    } else {
-                        alert(getTranslation("notificationsDenied"));
-                    }
-                } else {
-                    alert("Notifications are not supported in this browser.");
-                }
-            });
-
-            // Start recurring entries check
-            checkRecurringEntries();
         });
