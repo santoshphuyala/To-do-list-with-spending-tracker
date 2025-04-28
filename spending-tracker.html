@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -128,7 +89,7 @@
         .btn-info:hover {
             background-color: var(--button-info-hover-bg);
         }
-        .spending-entries-table {
+        .spending-entries-table, .shopping-list-table {
             max-height: 300px;
             overflow-y: auto;
         }
@@ -170,6 +131,10 @@
                 width: auto;
             }
         }
+        .shopping-item-purchased {
+            text-decoration: line-through;
+            color: var(--completed-text);
+        }
     </style>
 </head>
 <body class="container py-5">
@@ -185,7 +150,7 @@
         </div>
     </div>
 
-    <!-- New Add Spending Entry Section -->
+    <!-- Add Spending Entry Section -->
     <div class="action-buttons">
         <h4 class="mb-3" data-translate="addSpendingEntryHeader">Add Spending Entry</h4>
         <div class="row g-2">
@@ -268,6 +233,7 @@
                     <button type="button" class="btn btn-warning" id="manageEntriesBtn" data-translate="manageEntries">Manage Entries</button>
                     <button type="button" class="btn btn-success" id="setBudgetBtn" data-translate="setBudget">Set Budget</button>
                     <button type="button" class="btn btn-info" id="manageCategoriesBtn" data-translate="manageCategories">Manage Categories</button>
+                    <button type="button" class="btn btn-info" id="shoppingListBtn" data-translate="shoppingList">Shopping List</button>
                 </div>
             </div>
         </div>
@@ -514,6 +480,156 @@
         </div>
     </div>
 
+    <!-- Shopping List Modal -->
+    <div class="modal fade" id="shoppingListModal" tabindex="-1" aria-labelledby="shoppingListModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shoppingListModalLabel" data-translate="shoppingList">Shopping List</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Add Shopping Item Form -->
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="shoppingItemName" class="form-label" data-translate="itemName">Item Name</label>
+                                <input type="text" id="shoppingItemName" class="form-control" data-translate-placeholder="itemName" placeholder="Enter item name">
+                                <div class="invalid-feedback">Item name cannot be empty.</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="shoppingItemCategory" class="form-label" data-translate="category">Category</label>
+                                <select id="shoppingItemCategory" class="form-select">
+                                    <option value="Food" data-translate="food">Food</option>
+                                    <option value="Utilities" data-translate="utilities">Utilities</option>
+                                    <option value="Entertainment" data-translate="entertainment">Entertainment</option>
+                                    <option value="Other" data-translate="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="shoppingItemQuantity" class="form-label" data-translate="quantity">Quantity</label>
+                                <input type="number" id="shoppingItemQuantity" class="form-control" value="1" min="1">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-primary w-100" id="addShoppingItemBtn" data-translate="addItem">Add Item</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filter -->
+                    <div class="mb-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="text" id="searchShoppingItems" class="form-control mb-2" data-translate-placeholder="searchPlaceholder" placeholder="Search by item name">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="filterShoppingCategory" class="form-label" data-translate="filterByCategory">Filter by Category</label>
+                                <select id="filterShoppingCategory" class="form-select">
+                                    <option value="all" data-translate="all">All</option>
+                                    <option value="Food" data-translate="food">Food</option>
+                                    <option value="Utilities" data-translate="utilities">Utilities</option>
+                                    <option value="Entertainment" data-translate="entertainment">Entertainment</option>
+                                    <option value="Other" data-translate="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="filterPurchased" class="form-label" data-translate="filterByStatus">Filter by Status</label>
+                                <select id="filterPurchased" class="form-select">
+                                    <option value="all" data-translate="all">All</option>
+                                    <option value="purchased" data-translate="purchased">Purchased</option>
+                                    <option value="not-purchased" data-translate="notPurchased">Not Purchased</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shopping List Table -->
+                    <div class="shopping-list-table">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th data-translate="itemName">Item</th>
+                                    <th data-translate="category">Category</th>
+                                    <th data-translate="quantity">Quantity</th>
+                                    <th data-translate="status">Status</th>
+                                    <th data-translate="actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="shoppingListItems"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="close">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Shopping Item Modal -->
+    <div class="modal fade" id="editShoppingItemModal" tabindex="-1" aria-labelledby="editShoppingItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editShoppingItemModalLabel" data-translate="edit">Edit Shopping Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editShoppingItemName" class="form-label" data-translate="itemName">Item Name</label>
+                        <input type="text" id="editShoppingItemName" class="form-control" data-translate-placeholder="itemName" placeholder="Enter item name">
+                        <div class="invalid-feedback">Item name cannot be empty.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editShoppingItemCategory" class="form-label" data-translate="category">Category</label>
+                        <select id="editShoppingItemCategory" class="form-select">
+                            <option value="Food" data-translate="food">Food</option>
+                            <option value="Utilities" data-translate="utilities">Utilities</option>
+                            <option value="Entertainment" data-translate="entertainment">Entertainment</option>
+                            <option value="Other" data-translate="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editShoppingItemQuantity" class="form-label" data-translate="quantity">Quantity</label>
+                        <input type="number" id="editShoppingItemQuantity" class="form-control" min="1">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" id="editShoppingItemPurchased" class="form-check-input">
+                        <label for="editShoppingItemPurchased" class="form-check-label" data-translate="purchased">Purchased</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveEditShoppingItemBtn" data-translate="save">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Expense from Purchase Modal -->
+    <div class="modal fade" id="addPurchaseExpenseModal" tabindex="-1" aria-labelledby="addPurchaseExpenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addPurchaseExpenseModalLabel">Add Purchase Expense</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="purchaseItemInfo"></p>
+                    <div class="mb-3">
+                        <label for="purchaseAmount" class="form-label" data-translate="amount">Amount</label>
+                        <input type="number" id="purchaseAmount" class="form-control" placeholder="Enter amount" min="0" step="0.01" aria-label="Purchase amount">
+                        <div class="invalid-feedback">Please enter a valid amount.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmPurchaseBtn" data-translate="save">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -524,11 +640,14 @@
     // State management
     const state = {
         spendingEntries: [],
+        shoppingItems: [],
         budgets: {},
         categories: ["Food", "Rent", "Salary", "Utilities", "Entertainment", "Other"]
     };
 
     let currentEditSpendingIndex = null;
+    let currentEditShoppingItemIndex = null;
+    let currentPurchaseItemIndex = null;
     let categoryPieChart = null;
     let monthlyTrendsChart = null;
     const { jsPDF } = window.jspdf;
@@ -536,20 +655,16 @@
     // Default categories that cannot be deleted
     const defaultCategories = ["Food", "Rent", "Salary", "Utilities", "Entertainment", "Other"];
 
-    // Listen for theme changes from parent
-    window.addEventListener('message', (event) => {
-        if (event.data && event.data.theme) {
-            document.documentElement.setAttribute('data-theme', event.data.theme);
-            updateCharts();
-        }
-    });
-
     // Initialize
     document.addEventListener("DOMContentLoaded", () => {
         try {
             const storedSpending = localStorage.getItem("spendingEntries");
             if (storedSpending) {
                 state.spendingEntries = parseMinifiedJSON(storedSpending);
+            }
+            const storedShoppingItems = localStorage.getItem("shoppingItems");
+            if (storedShoppingItems) {
+                state.shoppingItems = parseMinifiedJSON(storedShoppingItems);
             }
             const storedBudgets = localStorage.getItem("spendingBudgets");
             if (storedBudgets) {
@@ -607,6 +722,10 @@
         document.getElementById("manageEntriesBtn").addEventListener("click", showManageEntries);
         document.getElementById("setBudgetBtn").addEventListener("click", openSetBudgetModal);
         document.getElementById("manageCategoriesBtn").addEventListener("click", openManageCategoriesModal);
+        document.getElementById("shoppingListBtn").addEventListener("click", openShoppingListModal);
+        document.getElementById("addShoppingItemBtn").addEventListener("click", addShoppingItem);
+        document.getElementById("saveEditShoppingItemBtn").addEventListener("click", saveEditedShoppingItem);
+        document.getElementById("confirmPurchaseBtn").addEventListener("click", confirmPurchase);
         document.getElementById("exportSpendingExcelBtn").addEventListener("click", exportSpendingToExcel);
         document.getElementById("exportSpendingPDFBtn").addEventListener("click", exportSpendingToPDF);
         document.getElementById("saveEditSpendingBtn").addEventListener("click", saveEditedSpendingEntry);
@@ -619,6 +738,7 @@
             populateCategoryDropdowns();
             showManageEntries();
             showSpendingSummary();
+            displayShoppingItems();
         });
         document.getElementById("searchEntries").addEventListener("input", debounce(() => {
             showManageEntries();
@@ -627,6 +747,9 @@
         document.getElementById("filterCategory").addEventListener("change", showManageEntries);
         document.getElementById("filterStartDate").addEventListener("change", showManageEntries);
         document.getElementById("filterEndDate").addEventListener("change", showManageEntries);
+        document.getElementById("searchShoppingItems").addEventListener("input", debounce(displayShoppingItems, 300));
+        document.getElementById("filterShoppingCategory").addEventListener("change", displayShoppingItems);
+        document.getElementById("filterPurchased").addEventListener("change", displayShoppingItems);
 
         // Keyboard navigation for buttons
         document.querySelectorAll(".btn").forEach(btn => {
@@ -650,6 +773,19 @@
             console.error("Failed to save spending entries:", e);
             alert("Unable to save spending entries. Please check your browser settings.");
             throw e;
+        }
+    }
+
+    /**
+     * Saves shopping items to localStorage.
+     */
+    function saveShoppingItems() {
+        try {
+            checkStorageCapacity();
+            localStorage.setItem("shoppingItems", minifyJSON(state.shoppingItems));
+        } catch (e) {
+            console.error("Failed to save shopping items:", e);
+            alert("Unable to save shopping items. Please check your browser settings.");
         }
     }
 
@@ -734,6 +870,226 @@
     }
 
     /**
+     * Opens the shopping list modal.
+     */
+    function openShoppingListModal() {
+        bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal")).hide();
+        document.getElementById("shoppingItemName").value = "";
+        document.getElementById("shoppingItemName").classList.remove("is-invalid");
+        document.getElementById("shoppingItemCategory").value = "Food";
+        document.getElementById("shoppingItemQuantity").value = 1;
+        document.getElementById("searchShoppingItems").value = "";
+        document.getElementById("filterShoppingCategory").value = "all";
+        document.getElementById("filterPurchased").value = "all";
+        displayShoppingItems();
+        new bootstrap.Modal(document.getElementById("shoppingListModal")).show();
+    }
+
+    /**
+     * Adds a new shopping item.
+     */
+    function addShoppingItem() {
+        const itemNameInput = document.getElementById("shoppingItemName");
+        const itemName = itemNameInput.value.trim();
+        const category = document.getElementById("shoppingItemCategory").value;
+        const quantity = parseInt(document.getElementById("shoppingItemQuantity").value);
+
+        if (!itemName) {
+            itemNameInput.classList.add("is-invalid");
+            return;
+        }
+        itemNameInput.classList.remove("is-invalid");
+
+        try {
+            state.shoppingItems.push({
+                name: itemName,
+                category,
+                quantity,
+                purchased: false
+            });
+            saveShoppingItems();
+            displayShoppingItems();
+            document.getElementById("shoppingItemName").value = "";
+            document.getElementById("shoppingItemCategory").value = "Food";
+            document.getElementById("shoppingItemQuantity").value = 1;
+        } catch (e) {
+            console.error("Failed to add shopping item:", e);
+            alert("Failed to add shopping item. Please try again.");
+        }
+    }
+
+    /**
+     * Displays the shopping list with search and filter functionality.
+     */
+    function displayShoppingItems() {
+        const shoppingList = document.getElementById("shoppingListItems");
+        shoppingList.innerHTML = "";
+
+        let filteredItems = [...state.shoppingItems];
+        const searchQuery = document.getElementById("searchShoppingItems").value.toLowerCase();
+        const filterCategory = document.getElementById("filterShoppingCategory").value;
+        const filterPurchased = document.getElementById("filterPurchased").value;
+
+        if (searchQuery) {
+            filteredItems = filteredItems.filter(item => item.name.toLowerCase().includes(searchQuery));
+        }
+        if (filterCategory !== "all") {
+            filteredItems = filteredItems.filter(item => item.category === filterCategory);
+        }
+        if (filterPurchased !== "all") {
+            filteredItems = filteredItems.filter(item => 
+                filterPurchased === "purchased" ? item.purchased : !item.purchased
+            );
+        }
+
+        if (filteredItems.length === 0) {
+            shoppingList.innerHTML = `<tr><td colspan="5">${getTranslation("noEntries") || "No shopping items found."}</td></tr>`;
+            return;
+        }
+
+        filteredItems.forEach((item, index) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td class="${item.purchased ? 'shopping-item-purchased' : ''}">${item.name}</td>
+                <td>${item.category}</td>
+                <td>${item.quantity}</td>
+                <td>
+                    <input type="checkbox" ${item.purchased ? 'checked' : ''} onchange="toggleShoppingItemPurchased(${index})">
+                </td>
+                <td>
+                    <button class="btn btn-warning btn-sm me-2" onclick="editShoppingItem(${index})" data-translate="edit">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteShoppingItem(${index})" data-translate="delete">Delete</button>
+                </td>
+            `;
+            shoppingList.appendChild(row);
+        });
+        applyTranslations();
+    }
+
+    /**
+     * Toggles the purchased status of a shopping item and prompts for expense entry if marked as purchased.
+     */
+    window.toggleShoppingItemPurchased = function(index) {
+        const wasPurchased = state.shoppingItems[index].purchased;
+        state.shoppingItems[index].purchased = !state.shoppingItems[index].purchased;
+        saveShoppingItems();
+
+        if (!wasPurchased && state.shoppingItems[index].purchased) {
+            // Item was just marked as purchased, prompt for expense
+            currentPurchaseItemIndex = index;
+            const item = state.shoppingItems[index];
+            document.getElementById("purchaseItemInfo").textContent = `Enter the amount spent on ${item.name} (${item.quantity} unit${item.quantity > 1 ? 's' : ''}).`;
+            document.getElementById("purchaseAmount").value = "";
+            document.getElementById("purchaseAmount").classList.remove("is-invalid");
+            new bootstrap.Modal(document.getElementById("addPurchaseExpenseModal")).show();
+        } else {
+            displayShoppingItems();
+        }
+    };
+
+    /**
+     * Confirms the purchase and adds an expense entry.
+     */
+    function confirmPurchase() {
+        const amountInput = document.getElementById("purchaseAmount");
+        const amount = parseFloat(amountInput.value);
+        if (isNaN(amount) || amount <= 0) {
+            amountInput.classList.add("is-invalid");
+            return;
+        }
+        amountInput.classList.remove("is-invalid");
+
+        const item = state.shoppingItems[currentPurchaseItemIndex];
+        try {
+            state.spendingEntries.push({
+                amount,
+                type: "Expense",
+                category: item.category,
+                date: new Date().toISOString().split("T")[0],
+                recurrence: "none",
+                currency: localStorage.getItem("defaultCurrency") || "NRs",
+                recurring: false
+            });
+            saveSpendingEntries();
+            checkBudgetAlerts(item.category);
+            bootstrap.Modal.getInstance(document.getElementById("addPurchaseExpenseModal")).hide();
+            displayShoppingItems();
+            alert("Expense added successfully for your purchase!");
+        } catch (e) {
+            console.error("Failed to add expense for purchase:", e);
+            alert("Failed to add expense for purchase. Please try again.");
+        }
+    }
+
+    /**
+     * Deletes a shopping item.
+     */
+    window.deleteShoppingItem = function(index) {
+        if (confirm(getTranslation("deleteCategoryConfirm") || "Are you sure you want to delete this item?")) {
+            state.shoppingItems.splice(index, 1);
+            saveShoppingItems();
+            displayShoppingItems();
+        }
+    };
+
+    /**
+     * Opens the edit shopping item modal.
+     */
+    window.editShoppingItem = function(index) {
+        currentEditShoppingItemIndex = index;
+        const item = state.shoppingItems[index];
+        document.getElementById("editShoppingItemName").value = item.name;
+        document.getElementById("editShoppingItemName").classList.remove("is-invalid");
+        document.getElementById("editShoppingItemCategory").value = item.category;
+        document.getElementById("editShoppingItemQuantity").value = item.quantity;
+        document.getElementById("editShoppingItemPurchased").checked = item.purchased;
+        new bootstrap.Modal(document.getElementById("editShoppingItemModal")).show();
+    };
+
+    /**
+     * Saves the edited shopping item.
+     */
+    function saveEditedShoppingItem() {
+        const itemNameInput = document.getElementById("editShoppingItemName");
+        const itemName = itemNameInput.value.trim();
+        const category = document.getElementById("editShoppingItemCategory").value;
+        const quantity = parseInt(document.getElementById("editShoppingItemQuantity").value);
+        const purchased = document.getElementById("editShoppingItemPurchased").checked;
+
+        if (!itemName) {
+            itemNameInput.classList.add("is-invalid");
+            return;
+        }
+        itemNameInput.classList.remove("is-invalid");
+
+        const wasPurchased = state.shoppingItems[currentEditShoppingItemIndex].purchased;
+        try {
+            state.shoppingItems[currentEditShoppingItemIndex] = {
+                name: itemName,
+                category,
+                quantity,
+                purchased
+            };
+            saveShoppingItems();
+            if (!wasPurchased && purchased) {
+                // Item was just marked as purchased during edit, prompt for expense
+                currentPurchaseItemIndex = currentEditShoppingItemIndex;
+                const item = state.shoppingItems[currentEditShoppingItemIndex];
+                document.getElementById("purchaseItemInfo").textContent = `Enter the amount spent on ${item.name} (${item.quantity} unit${item.quantity > 1 ? 's' : ''}).`;
+                document.getElementById("purchaseAmount").value = "";
+                document.getElementById("purchaseAmount").classList.remove("is-invalid");
+                new bootstrap.Modal(document.getElementById("addPurchaseExpenseModal")).show();
+            } else {
+                bootstrap.Modal.getInstance(document.getElementById("editShoppingItemModal")).hide();
+                displayShoppingItems();
+            }
+        } catch (e) {
+            console.error("Failed to update shopping item:", e);
+            alert("Failed to update shopping item. Please try again.");
+        }
+    }
+
+    /**
      * Adds a new custom category.
      */
     function addCategory() {
@@ -786,14 +1142,21 @@
                     entry.category = "Other";
                 }
             });
+            state.shoppingItems.forEach(item => {
+                if (item.category === category) {
+                    item.category = "Other";
+                }
+            });
             delete state.budgets[category];
             saveCategories();
             saveSpendingEntries();
+            saveShoppingItems();
             localStorage.setItem("spendingBudgets", minifyJSON(state.budgets));
             populateCategoryList();
             populateCategoryDropdowns();
             showManageEntries();
             showSpendingSummary();
+            displayShoppingItems();
         }
     }
 
@@ -804,18 +1167,21 @@
         const dropdowns = [
             document.getElementById("spendingCategory"),
             document.getElementById("editSpendingCategory"),
-            document.getElementById("filterCategory")
+            document.getElementById("filterCategory"),
+            document.getElementById("shoppingItemCategory"),
+            document.getElementById("editShoppingItemCategory"),
+            document.getElementById("filterShoppingCategory")
         ];
         dropdowns.forEach(dropdown => {
             const selectedValue = dropdown.value;
-            dropdown.innerHTML = dropdown.id === "filterCategory" ? '<option value="all" data-translate="all">All</option>' : '';
+            dropdown.innerHTML = dropdown.id === "filterCategory" || dropdown.id === "filterShoppingCategory" ? '<option value="all" data-translate="all">All</option>' : '';
             state.categories.forEach(category => {
                 const option = document.createElement("option");
                 option.value = category;
                 option.textContent = category;
                 dropdown.appendChild(option);
             });
-            dropdown.value = selectedValue in state.categories || dropdown.id !== "filterCategory" ? selectedValue : "all";
+            dropdown.value = state.categories.includes(selectedValue) || (dropdown.id !== "filterCategory" && dropdown.id !== "filterShoppingCategory") ? selectedValue : "all";
         });
         applyTranslations();
     }
@@ -1180,249 +1546,276 @@
             monthlyTrendsChart.options.scales.x.title.color = chartTextColor;
             monthlyTrendsChart.options.scales.y.title.color = chartTextColor;
             monthlyTrendsChart.options.scales.x.ticks.color = chartTextColor;
-            monthlyTrendsChart.options.scales.y.ticks.color = chartTextColor;
-            monthlyTrendsChart.options.plugins.legend.labels.color = chartTextColor;
-            monthlyTrendsChart.options.plugins.title.color = chartTextColor;
-            monthlyTrendsChart.options.elements.line.backgroundColor = chartBgColor;
-            monthlyTrendsChart.update();
-        }
-    }
+                    monthlyTrendsChart.options.scales.y.ticks.color = chartTextColor;
+                    monthlyTrendsChart.options.plugins.legend.labels.color = chartTextColor;
+                    monthlyTrendsChart.options.plugins.title.color = chartTextColor;
+                    monthlyTrendsChart.options.elements.line.backgroundColor = chartBgColor;
+                    monthlyTrendsChart.update();
+                }
+            }
 
-    /**
-     * Shows the spending summary modal with weekly, monthly, yearly summaries, budgets, and charts.
-     */
-    function showSpendingSummary() {
-        bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal"))?.hide();
-        const now = new Date();
-        const defaultCurrency = localStorage.getItem("defaultCurrency") || "NRs";
+            /**
+             * Converts an amount to the default currency.
+             */
+            function convertToDefaultCurrency(amount, currency) {
+                const defaultCurrency = localStorage.getItem("defaultCurrency") || "NRs";
+                const exchangeRates = {
+                    "NRs": 1,
+                    "USD": 0.0075, // 1 NRs = 0.0075 USD
+                    "GBP": 0.0057  // 1 NRs = 0.0057 GBP
+                };
+                if (currency === defaultCurrency) return amount;
+                const amountInNRs = amount / exchangeRates[currency];
+                return amountInNRs * exchangeRates[defaultCurrency];
+            }
 
-        // Budget Overview
-        const budgetOverview = document.getElementById("budgetOverview");
-        budgetOverview.innerHTML = "";
-        if (Object.keys(state.budgets).length === 0) {
-            budgetOverview.innerHTML = `<p>${getTranslation("noBudgetSet")}</p>`;
-        } else {
-            Object.keys(state.budgets).forEach(category => {
-                const spent = calculateMonthlyExpenses(category);
-                const budget = state.budgets[category];
-                const percentage = (spent / budget) * 100;
-                const div = document.createElement("div");
-                div.innerHTML = `
-                    <p>${getTranslation("budgetFor")} ${category}: ${budget.toFixed(2)} ${defaultCurrency}</p>
-                    <div class="progress">
-                        <div class="progress-bar ${percentage > 100 ? 'bg-danger' : percentage > 80 ? 'bg-warning' : 'bg-success'}" role="progressbar" style="width: ${Math.min(percentage, 100)}%" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100">${spent.toFixed(2)} (${percentage.toFixed(1)}%)</div>
-                    </div>
+            /**
+             * Shows the spending summary modal with reports and charts.
+             */
+            function showSpendingSummary() {
+                bootstrap.Modal.getInstance(document.getElementById("spendingTrackerModal")).hide();
+
+                // Budget Overview
+                const budgetOverview = document.getElementById("budgetOverview");
+                budgetOverview.innerHTML = "";
+                if (Object.keys(state.budgets).length === 0) {
+                    budgetOverview.innerHTML = `<p>${getTranslation("noBudgetSet")}</p>`;
+                } else {
+                    Object.keys(state.budgets).forEach(category => {
+                        const budget = state.budgets[category];
+                        const spent = calculateMonthlyExpenses(category);
+                        const percentage = (spent / budget) * 100;
+                        const progressClass = percentage > 100 ? "bg-danger" : percentage > 80 ? "bg-warning" : "bg-success";
+                        const div = document.createElement("div");
+                        div.className = "mb-3";
+                        div.innerHTML = `
+                            <label>${getTranslation("budgetFor")} ${category}</label>
+                            <div class="progress">
+                                <div class="progress-bar ${progressClass}" role="progressbar" style="width: ${Math.min(percentage, 100)}%" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100">
+                                    ${spent.toFixed(2)} / ${budget.toFixed(2)} ${localStorage.getItem("defaultCurrency") || "NRs"}
+                                </div>
+                            </div>
+                        `;
+                        budgetOverview.appendChild(div);
+                    });
+                }
+
+                // Weekly Summary
+                const weeklySummary = document.getElementById("weeklySummary");
+                weeklySummary.innerHTML = "";
+                const today = new Date();
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+                let weeklyBalance = 0;
+                days.forEach((day, i) => {
+                    const currentDay = new Date(startOfWeek);
+                    currentDay.setDate(startOfWeek.getDate() + i);
+                    const dateStr = currentDay.toISOString().split("T")[0];
+                    const dailyEntries = state.spendingEntries.filter(entry => entry.date === dateStr);
+                    const dailyIncome = dailyEntries
+                        .filter(entry => entry.type === "Income")
+                        .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+                    const dailyExpenses = dailyEntries
+                        .filter(entry => entry.type === "Expense")
+                        .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+                    weeklyBalance += (dailyIncome - dailyExpenses);
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${day} (${dateStr})</td>
+                        <td>${dailyIncome.toFixed(2)}</td>
+                        <td>${dailyExpenses.toFixed(2)}</td>
+                        <td>${weeklyBalance.toFixed(2)}</td>
+                    `;
+                    weeklySummary.appendChild(row);
+                });
+
+                // Monthly Summary
+                const monthlySummary = document.getElementById("monthlySummary");
+                monthlySummary.innerHTML = "";
+                const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                const monthlyEntries = state.spendingEntries.filter(entry => {
+                    const entryDate = new Date(entry.date);
+                    return entryDate >= monthStart && entryDate <= monthEnd;
+                });
+                const totalIncome = monthlyEntries
+                    .filter(entry => entry.type === "Income")
+                    .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+                const totalExpenses = monthlyEntries
+                    .filter(entry => entry.type === "Expense")
+                    .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+                const netBalance = totalIncome - totalExpenses;
+                monthlySummary.innerHTML = `
+                    <tr>
+                        <td>${totalIncome.toFixed(2)}</td>
+                        <td>${totalExpenses.toFixed(2)}</td>
+                        <td>${netBalance.toFixed(2)}</td>
+                    </tr>
                 `;
-                budgetOverview.appendChild(div);
-            });
-        }
 
-        // Weekly Summary by Day
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
-        const weeklySummaryTable = document.getElementById("weeklySummary");
-        weeklySummaryTable.innerHTML = "";
-        const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-        for (let i = 0; i < 7; i++) {
-            const currentDay = new Date(weekStart);
-            currentDay.setDate(weekStart.getDate() + i);
-            const dayString = currentDay.toISOString().split("T")[0];
-            const dayEntries = state.spendingEntries.filter(entry => entry.date === dayString);
-            const income = dayEntries
-                .filter(entry => entry.type === "Income")
-                .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-            const expenses = dayEntries
-                .filter(entry => entry.type === "Expense")
-                .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-            const balance = income - expenses;
+                // Yearly Summary
+                const yearlySummary = document.getElementById("yearlySummary");
+                yearlySummary.innerHTML = "";
+                const yearStart = new Date(today.getFullYear(), 0, 1);
+                const yearEnd = new Date(today.getFullYear(), 11, 31);
+                const yearlyEntries = state.spendingEntries.filter(entry => {
+                    const entryDate = new Date(entry.date);
+                    return entryDate >= yearStart && entryDate <= yearEnd;
+                });
+                const yearlyIncome = yearlyEntries
+                    .filter(entry => entry.type === "Income")
+                    .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+                const yearlyExpenses = yearlyEntries
+                    .filter(entry => entry.type === "Expense")
+                    .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+                const yearlyBalance = yearlyIncome - yearlyExpenses;
+                yearlySummary.innerHTML = `
+                    <tr>
+                        <td>${yearlyIncome.toFixed(2)}</td>
+                        <td>${yearlyExpenses.toFixed(2)}</td>
+                        <td>${yearlyBalance.toFixed(2)}</td>
+                    </tr>
+                `;
 
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${days[i]} (${dayString})</td>
-                <td>${income.toFixed(2)} ${defaultCurrency}</td>
-                <td>${expenses.toFixed(2)} ${defaultCurrency}</td>
-                <td>${balance.toFixed(2)} ${defaultCurrency}</td>
-            `;
-            weeklySummaryTable.appendChild(row);
-        }
-
-        // Monthly Summary
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        const monthlyEntries = state.spendingEntries.filter(entry => {
-            const entryDate = new Date(entry.date);
-            return entryDate >= monthStart && entryDate <= monthEnd;
-        });
-        const monthlyIncome = monthlyEntries
-            .filter(entry => entry.type === "Income")
-            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-        const monthlyExpenses = monthlyEntries
-            .filter(entry => entry.type === "Expense")
-            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-        document.getElementById("monthlySummary").innerHTML = `
-            <tr>
-                <td>${monthlyIncome.toFixed(2)} ${defaultCurrency}</td>
-                <td>${monthlyExpenses.toFixed(2)} ${defaultCurrency}</td>
-                <td>${(monthlyIncome - monthlyExpenses).toFixed(2)} ${defaultCurrency}</td>
-            </tr>
-        `;
-
-        // Yearly Summary
-        const yearStart = new Date(now.getFullYear(), 0, 1);
-        const yearEnd = new Date(now.getFullYear(), 11, 31);
-        const yearlyEntries = state.spendingEntries.filter(entry => {
-            const entryDate = new Date(entry.date);
-            return entryDate >= yearStart && entryDate <= yearEnd;
-        });
-        const yearlyIncome = yearlyEntries
-            .filter(entry => entry.type === "Income")
-            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-        const yearlyExpenses = yearlyEntries
-            .filter(entry => entry.type === "Expense")
-            .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-        document.getElementById("yearlySummary").innerHTML = `
-            <tr>
-                <td>${yearlyIncome.toFixed(2)} ${defaultCurrency}</td>
-                <td>${yearlyExpenses.toFixed(2)} ${defaultCurrency}</td>
-                <td>${(yearlyIncome - yearlyExpenses).toFixed(2)} ${defaultCurrency}</td>
-            </tr>
-        `;
-
-        // Category-wise Expenses Pie Chart
-        const categoryExpenses = {};
-        state.categories.forEach(category => {
-            categoryExpenses[category] = monthlyEntries
-                .filter(entry => entry.type === "Expense" && entry.category === category)
-                .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
-        });
-        const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
-        if (categoryPieChart) categoryPieChart.destroy();
-        categoryPieChart = new Chart(document.getElementById("categoryPieChart"), {
-            type: 'pie',
-            data: {
-                labels: state.categories,
-                datasets: [{
-                    data: state.categories.map(cat => categoryExpenses[cat]),
-                    backgroundColor: state.categories.map((_, i) => `hsl(${(i * 360 / state.categories.length) % 360}, 70%, ${isDarkMode ? 60 : 50}%)`)
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            color: isDarkMode ? "#f8f9fa" : "#212529"
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: getTranslation("categoryWiseExpenses"),
-                        color: isDarkMode ? "#f8f9fa" : "#212529"
-                    }
+                // Category-wise Expenses (Pie Chart)
+                const categoryExpenses = {};
+                state.categories.forEach(category => {
+                    categoryExpenses[category] = state.spendingEntries
+                        .filter(entry => entry.type === "Expense" && entry.category === category)
+                        .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0);
+                });
+                const categoryLabels = Object.keys(categoryExpenses);
+                const categoryData = Object.values(categoryExpenses);
+                const isDarkMode = document.documentElement.getAttribute("data-theme") === "dark";
+                if (categoryPieChart) {
+                    categoryPieChart.destroy();
                 }
-            }
-        });
+                categoryPieChart = new Chart(document.getElementById("categoryPieChart"), {
+                    type: "pie",
+                    data: {
+                        labels: categoryLabels,
+                        datasets: [{
+                            data: categoryData,
+                            backgroundColor: categoryLabels.map((_, i) =>
+                                `hsl(${(i * 360 / categoryLabels.length) % 360}, 70%, ${isDarkMode ? 60 : 50}%)`
+                            )
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: "top",
+                                labels: {
+                                    color: isDarkMode ? "#f8f9fa" : "#212529"
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: getTranslation("categoryWiseExpenses"),
+                                color: isDarkMode ? "#f8f9fa" : "#212529"
+                            }
+                        }
+                    }
+                });
 
-        // Monthly Trends Line Chart (Last 6 Months)
-        const months = [];
-        const incomes = [];
-        const expenses = [];
-        for (let i = 5; i >= 0; i--) {
-            const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-            const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-            const monthEntries = state.spendingEntries.filter(entry => {
-                const entryDate = new Date(entry.date);
-                return entryDate >= monthStart && entryDate <= monthEnd;
-            });
-            months.push(monthDate.toLocaleString('default', { month: 'short', year: 'numeric' }));
-            incomes.push(monthEntries
-                .filter(entry => entry.type === "Income")
-                .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0));
-            expenses.push(monthEntries
-                .filter(entry => entry.type === "Expense")
-                .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0));
-        }
-        if (monthlyTrendsChart) monthlyTrendsChart.destroy();
-        monthlyTrendsChart = new Chart(document.getElementById("monthlyTrendsChart"), {
-            type: 'line',
-            data: {
-                labels: months,
-                datasets: [
-                    {
-                        label: getTranslation("incomeLabel"),
-                        data: incomes,
-                        borderColor: isDarkMode ? "#28a745" : "#28a745",
-                        backgroundColor: isDarkMode ? "rgba(40, 167, 69, 0.2)" : "rgba(40, 167, 69, 0.2)",
-                        fill: true
-                    },
-                    {
-                        label: getTranslation("expenses"),
-                        data: expenses,
-borderColor: isDarkMode ? "#dc3545" : "#dc3545",
-                        backgroundColor: isDarkMode ? "rgba(220, 53, 69, 0.2)" : "rgba(220, 53, 69, 0.2)",
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            color: isDarkMode ? "#f8f9fa" : "#212529"
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: getTranslation("monthlyTrends"),
-                        color: isDarkMode ? "#f8f9fa" : "#212529"
-                    }
-                },
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Months',
-                            color: isDarkMode ? "#f8f9fa" : "#212529"
-                        },
-                        ticks: {
-                            color: isDarkMode ? "#f8f9fa" : "#212529"
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: `Amount (${defaultCurrency})`,
-                            color: isDarkMode ? "#f8f9fa" : "#212529"
-                        },
-                        ticks: {
-                            color: isDarkMode ? "#f8f9fa" : "#212529"
-                        },
-                        beginAtZero: true
-                    }
-                },
-                elements: {
-                    line: {
-                        backgroundColor: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"
-                    }
+                // Monthly Trends (Line Chart)
+                const months = [];
+                const incomes = [];
+                const expenses = [];
+                for (let i = 5; i >= 0; i--) {
+                    const monthDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                    const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+                    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+                    const monthEntries = state.spendingEntries.filter(entry => {
+                        const entryDate = new Date(entry.date);
+                        return entryDate >= monthStart && entryDate <= monthEnd;
+                    });
+                    months.push(monthDate.toLocaleString("default", { month: "short", year: "numeric" }));
+                    incomes.push(monthEntries
+                        .filter(entry => entry.type === "Income")
+                        .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0));
+                    expenses.push(monthEntries
+                        .filter(entry => entry.type === "Expense")
+                        .reduce((sum, entry) => sum + convertToDefaultCurrency(entry.amount, entry.currency), 0));
                 }
+                if (monthlyTrendsChart) {
+                    monthlyTrendsChart.destroy();
+                }
+                monthlyTrendsChart = new Chart(document.getElementById("monthlyTrendsChart"), {
+                    type: "line",
+                    data: {
+                        labels: months,
+                        datasets: [
+                            {
+                                label: getTranslation("incomeLabel"),
+                                data: incomes,
+                                borderColor: isDarkMode ? "#28a745" : "#28a745",
+                                backgroundColor: isDarkMode ? "rgba(40, 167, 69, 0.2)" : "rgba(40, 167, 69, 0.2)",
+                                fill: true
+                            },
+                            {
+                                label: getTranslation("expenses"),
+                                data: expenses,
+                                borderColor: isDarkMode ? "#dc3545" : "#dc3545",
+                                backgroundColor: isDarkMode ? "rgba(220, 53, 69, 0.2)" : "rgba(220, 53, 69, 0.2)",
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: "top",
+                                labels: {
+                                    color: isDarkMode ? "#f8f9fa" : "#212529"
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: getTranslation("monthlyTrends"),
+                                color: isDarkMode ? "#f8f9fa" : "#212529"
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: "Months",
+                                    color: isDarkMode ? "#f8f9fa" : "#212529"
+                                },
+                                ticks: {
+                                    color: isDarkMode ? "#f8f9fa" : "#212529"
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: `Amount (${localStorage.getItem("defaultCurrency") || "NRs"})`,
+                                    color: isDarkMode ? "#f8f9fa" : "#212529"
+                                },
+                                ticks: {
+                                    color: isDarkMode ? "#f8f9fa" : "#212529"
+                                },
+                                beginAtZero: true
+                            }
+                        },
+                        elements: {
+                            line: {
+                                backgroundColor: isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"
+                            }
+                        }
+                    }
+                });
+
+                applyTranslations();
+                new bootstrap.Modal(document.getElementById("spendingSummaryModal")).show();
             }
-        });
-
-        applyTranslations();
-        new bootstrap.Modal(document.getElementById("spendingSummaryModal")).show();
-    }
-
-    // Expose functions to global scope for inline event handlers
-    window.editSpendingEntry = editSpendingEntry;
-    window.deleteSpendingEntry = deleteSpendingEntry;
-    window.stopRecurrence = stopRecurrence;
-})();
+        })();
     </script>
 </body>
 </html>
