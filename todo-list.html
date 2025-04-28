@@ -1,49 +1,11 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utility.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utility.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utility.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo List</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title data-translate="todoListTitle">Todo List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link rel="icon" href="data:,">
     <style>
         :root {
             --background-color: #f8f9fa;
@@ -58,6 +20,12 @@
             --low-bg: #28a745;
             --modal-bg: #ffffff;
             --modal-text: #212529;
+            --accent-bg: #e9ecef;
+            --button-hover-bg: #0056b3;
+            --button-success-bg: #28a745;
+            --button-success-hover-bg: #218838;
+            --button-info FSM-bg: #17a2b8;
+            --button-info-hover-bg: #138496;
         }
         [data-theme="dark"] {
             --background-color: #212529;
@@ -72,6 +40,12 @@
             --low-bg: #28a745;
             --modal-bg: #343a40;
             --modal-text: #f8f9fa;
+            --accent-bg: #495057;
+            --button-hover-bg: #1a73e8;
+            --button-success-bg: #28a745;
+            --button-success-hover-bg: #2ecc71;
+            --button-info-bg: #17a2b8;
+            --button-info-hover-bg: #1ccad8;
         }
         body {
             background-color: var(--background-color);
@@ -87,138 +61,179 @@
             background-color: var(--modal-bg);
             color: var(--modal-text);
         }
-        .completed { text-decoration: line-through; color: var(--completed-text); }
+        .completed {
+            text-decoration: line-through;
+            color: var(--completed-text);
+        }
         .high { background-color: var(--high-bg); color: white; }
         .medium { background-color: var(--medium-bg); color: black; }
         .low { background-color: var(--low-bg); color: white; }
-        .notes-collapse { max-height: 100px; overflow-y: auto; }
+        .notes-collapse {
+            max-height: 100px;
+            overflow-y: auto;
+        }
         .btn-primary, .btn-info, .btn-success, .btn-danger, .btn-warning, .btn-secondary {
             background-color: var(--button-bg);
             color: var(--button-text);
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: var(--button-hover-bg);
+        }
+        .btn-success {
+            background-color: var(--button-success-bg);
+        }
+        .btn-success:hover {
+            background-color: var(--button-success-hover-bg);
+        }
+        .btn-info {
+            background-color: var(--button-info-bg);
+        }
+        .btn-info:hover {
+            background-color: var(--button-info-hover-bg);
+        }
+        .action-buttons {
+            background-color: var(--accent-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .action-buttons .btn {
+            margin: 5px;
         }
     </style>
 </head>
 <body class="container py-5">
-    <h2 class="text-center mb-4">Todo List</h2>
+    <h2 class="text-center mb-4" data-translate="todoListTitle">Todo List</h2>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <a href="spending-tracker.html" class="btn btn-primary" data-translate="spendingTracker">Spending Tracker</a>
+            <div>
+                <button class="btn btn-secondary me-2" id="themeToggleBtn" data-translate="toggleTheme">Toggle Theme</button>
+                <select id="languageToggle" class="form-select d-inline-block" style="width: auto;">
+                    <option value="en" data-translate="english">English</option>
+                    <option value="ne" data-translate="nepali">Nepali</option>
+                </select>
+            </div>
+        </div>
+    </div>
 
     <!-- Category Filter Dropdown -->
     <div class="mb-3">
-        <label for="categoryFilter" class="form-label">Filter by Category</label>
+        <label for="categoryFilter" class="form-label" data-translate="filterByCategory">Filter by Category</label>
         <select id="categoryFilter" class="form-select" aria-label="Filter by category">
-            <option value="all">All Categories</option>
-            <option value="General">General</option>
-            <option value="Work">Work</option>
-            <option value="Personal">Personal</option>
+            <option value="all" data-translate="allCategories">All Categories</option>
+            <option value="General" data-translate="general">General</option>
+            <option value="Work" data-translate="work">Work</option>
+            <option value="Personal" data-translate="personal">Personal</option>
         </select>
     </div>
 
     <!-- Task Input Form -->
     <div class="input-group mb-3">
-        <input type="text" id="taskInput" class="form-control" placeholder="Add a new task" aria-label="Task description">
-        <div class="invalid-feedback">Please enter a task description.</div>
+        <input type="text" id="taskInput" class="form-control" placeholder="Add a new task" aria-label="Task description" data-translate-placeholder="addTaskPlaceholder">
+        <div class="invalid-feedback" data-translate="taskRequired">Please enter a task description.</div>
         <select id="taskCategory" class="form-select" aria-label="Task category">
-            <option value="General">General</option>
-            <option value="Work">Work</option>
-            <option value="Personal">Personal</option>
+            <option value="General" data-translate="general">General</option>
+            <option value="Work" data-translate="work">Work</option>
+            <option value="Personal" data-translate="personal">Personal</option>
         </select>
         <select id="taskPriority" class="form-select" aria-label="Task priority">
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+            <option value="low" data-translate="low">Low</option>
+            <option value="medium" data-translate="medium">Medium</option>
+            <option value="high" data-translate="high">High</option>
         </select>
         <select id="taskRecurrence" class="form-select" aria-label="Task recurrence">
-            <option value="none">None</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
+            <option value="none" data-translate="none">None</option>
+            <option value="daily" data-translate="daily">Daily</option>
+            <option value="weekly" data-translate="weekly">Weekly</option>
+            <option value="monthly" data-translate="monthly">Monthly</option>
         </select>
         <input type="date" id="taskDate" class="form-control" aria-label="Due date">
         <div class="input-group mb-3">
-            <textarea id="taskNotes" class="form-control" placeholder="Add notes (optional)" aria-label="Task notes" rows="2"></textarea>
+            <textarea id="taskNotes" class="form-control" placeholder="Add notes (optional)" aria-label="Task notes" rows="2" data-translate-placeholder="addNotesPlaceholder"></textarea>
         </div>
-        <button class="btn btn-primary" id="addTaskBtn">Add Task</button>
-        <button class="btn btn-secondary btn-sm" id="clearDateBtn">Clear Date</button>
+        <button class="btn btn-primary" id="addTaskBtn" data-translate="addTask">Add Task</button>
+        <button class="btn btn-secondary btn-sm" id="clearDateBtn" data-translate="clearDate">Clear Date</button>
     </div>
 
     <!-- Sort and Filter Buttons -->
-    <div class="mb-3">
-        <button class="btn btn-info" id="sortDateBtn">Sort by Date</button>
-        <button class="btn btn-info" id="sortPriorityBtn">Sort by Priority</button>
-        <button class="btn btn-info" id="filterPendingBtn">Show Pending</button>
-        <button class="btn btn-info" id="filterCompletedBtn">Show Completed</button>
-        <button class="btn btn-info" id="filterAllBtn">Show All</button>
+    <div class="mb-3 action-buttons">
+        <button class="btn btn-info" id="sortDateBtn" data-translate="sortByDate">Sort by Date</button>
+        <button class="btn btn-info" id="sortPriorityBtn" data-translate="sortByPriority">Sort by Priority</button>
+        <button class="btn btn-info" id="filterPendingBtn" data-translate="showPending">Show Pending</button>
+        <button class="btn btn-info" id="filterCompletedBtn" data-translate="showCompleted">Show Completed</button>
+        <button class="btn btn-info" id="filterAllBtn" data-translate="showAll">Show All</button>
+        <button class="btn btn-info" id="exportExcelBtn" data-translate="exportExcel">Export to Excel</button>
+        <button class="btn btn-secondary" id="sendEmailBtn" data-translate="emailTodoList">Email Todo List</button>
+        <button class="btn btn-success" id="markAllCompletedBtn" data-translate="markAllCompleted">Mark All Completed</button>
+        <button class="btn btn-danger" id="deleteAllBtn" data-translate="deleteAll">Delete All</button>
+        <button class="btn btn-warning" id="undoBtn" data-translate="undo">Undo</button>
+        <button class="btn btn-warning" id="redoBtn" data-translate="redo">Redo</button>
+        <button class="btn btn-primary" id="backupBtn" data-translate="backupData">Backup Data</button>
+        <button class="btn btn-primary" id="restoreBtn" data-translate="restoreData">Restore Data</button>
     </div>
+    <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
 
     <!-- Task List -->
     <ul id="taskList" class="list-group mb-3" role="list" aria-live="polite"></ul>
-
-    <!-- Action Buttons -->
-    <div>
-        <button class="btn btn-info" id="exportExcelBtn">Export to Excel</button>
-        <button class="btn btn-secondary" id="sendEmailBtn">Email Todo List</button>
-        <button class="btn btn-success" id="markAllCompletedBtn">Mark All Completed</button>
-        <button class="btn btn-danger" id="deleteAllBtn">Delete All</button>
-        <button class="btn btn-warning" id="undoBtn">Undo</button>
-        <button class="btn btn-warning" id="redoBtn">Redo</button>
-        <button class="btn btn-primary" id="backupBtn">Backup Data</button>
-        <button class="btn btn-primary" id="restoreBtn">Restore Data</button>
-        <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
-    </div>
 
     <!-- Edit Task Modal -->
     <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editTaskModalLabel">Edit Task</h5>
+                    <h5 class="modal-title" id="editTaskModalLabel" data-translate="editTask">Edit Task</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="editTaskInput" class="form-label">Task Description</label>
+                        <label for="editTaskInput" class="form-label" data-translate="taskDescription">Task Description</label>
                         <input type="text" id="editTaskInput" class="form-control" aria-label="Edit task description">
-                        <div class="invalid-feedback">Task cannot be empty.</div>
+                        <div class="invalid-feedback" data-translate="taskRequired">Task cannot be empty.</div>
                     </div>
                     <div class="mb-3">
-                        <label for="editTaskCategory" class="form-label">Category</label>
+                        <label for="editTaskCategory" class="form-label" data-translate="category">Category</label>
                         <select id="editTaskCategory" class="form-select" aria-label="Edit task category">
-                            <option value="General">General</option>
-                            <option value="Work">Work</option>
-                            <option value="Personal">Personal</option>
+                            <option value="General" data-translate="general">General</option>
+                            <option value="Work" data-translate="work">Work</option>
+                            <option value="Personal" data-translate="personal">Personal</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="editTaskPriority" class="form-label">Priority</label>
+                        <label for="editTaskPriority" class="form-label" data-translate="priority">Priority</label>
                         <select id="editTaskPriority" class="form-select" aria-label="Edit task priority">
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
+                            <option value="low" data-translate="low">Low</option>
+                            <option value="medium" data-translate="medium">Medium</option>
+                            <option value="high" data-translate="high">High</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="editTaskRecurrence" class="form-label">Recurrence</label>
+                        <label for="editTaskRecurrence" class="form-label" data-translate="recurrence">Recurrence</label>
                         <select id="editTaskRecurrence" class="form-select" aria-label="Edit task recurrence">
-                            <option value="none">None</option>
-                            <option value="daily">Daily</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
+                            <option value="none" data-translate="none">None</option>
+                            <option value="daily" data-translate="daily">Daily</option>
+                            <option value="weekly" data-translate="weekly">Weekly</option>
+                            <option value="monthly" data-translate="monthly">Monthly</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="editTaskDate" class="form-label">Due Date</label>
+                        <label for="editTaskDate" class="form-label" data-translate="dueDate">Due Date</label>
                         <div class="input-group">
                             <input type="date" id="editTaskDate" class="form-control" aria-label="Edit due date">
-                            <button class="btn btn-secondary btn-sm" id="editClearDateBtn">Clear Date</button>
+                            <button class="btn btn-secondary btn-sm" id="editClearDateBtn" data-translate="clearDate">Clear Date</button>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="editTaskNotes" class="form-label">Notes</label>
+                        <label for="editTaskNotes" class="form-label" data-translate="notes">Notes</label>
                         <textarea id="editTaskNotes" class="form-control" aria-label="Edit task notes" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveEditBtn">Save</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveEditBtn" data-translate="save">Save</button>
                 </div>
             </div>
         </div>
@@ -229,25 +244,68 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="emailModalLabel">Send Todo List</h5>
+                    <h5 class="modal-title" id="emailModalLabel" data-translate="sendTodoList">Send Todo List</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="email" id="emailInput" class="form-control" placeholder="Enter recipient email" aria-label="Recipient email">
-                    <div class="invalid-feedback">Please enter a valid email address.</div>
+                    <input type="email" id="emailInput" class="form-control" placeholder="Enter recipient email" aria-label="Recipient email" data-translate-placeholder="emailPlaceholder">
+                    <div class="invalid-feedback" data-translate="invalidEmail">Please enter a valid email address.</div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="sendEmailConfirmBtn">Send</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-translate="cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="sendEmailConfirmBtn" data-translate="send">Send</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.5.6/purify.min.js" integrity="sha512-WqUXS3XzR/4WNa4s+DjQd6zO7Wepg3jBqzCtoblzU2IAjdK9W8D7Y2AHb0Qz3JIuGL4cXWoS5T8q3IN0A9tkLTVQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script src="lib/xlsx.full.min.js"></script>
+    <script src="lib/purify.min.js"></script>
     <script src="utility.js"></script>
+    <script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+
+        function filledCell(cell) {
+            return cell !== '' && cell != null;
+        }
+
+        function loadFileData(filename) {
+            if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+                try {
+                    var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                    var firstSheetName = workbook.SheetNames[0];
+                    var worksheet = workbook.Sheets[firstSheetName];
+
+                    // Convert sheet to JSON to filter blank rows
+                    var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                    // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                    var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                    // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                    var headerRowIndex = filteredData.findIndex((row, index) =>
+                        row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                    );
+                    // Fallback
+                    if (headerRowIndex === -1 || headerRowIndex > 25) {
+                        headerRowIndex = 0;
+                    }
+
+                    // Convert filtered JSON back to CSV
+                    var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                    csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                    return csv;
+                } catch (e) {
+                    console.error(e);
+                    return "";
+                }
+            }
+            return gk_fileData[filename] || "";
+        }
+    </script>
     <script>
 (function () {
     // State management
@@ -289,12 +347,31 @@
         }
     }
 
-    // Listen for theme changes from parent
-    window.addEventListener('message', (event) => {
-        if (event.data && event.data.theme) {
-            document.documentElement.setAttribute('data-theme', event.data.theme);
+    // Debounce utility
+    function debounce(func, delay) {
+        let timeoutId;
+        return function (...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    // Check localStorage capacity
+    function checkStorageCapacity() {
+        const testKey = '__test__';
+        let data = '';
+        try {
+            for (let x = 0; x < 1024 * 1024; x++) {
+                data += 'a';
+            }
+            localStorage.setItem(testKey, data);
+            localStorage.removeItem(testKey);
+        } catch (e) {
+            console.error('Storage capacity exceeded:', e);
+            alert('Storage capacity exceeded. Please clear some data.');
+            throw e;
         }
-    });
+    }
 
     // Initialize
     document.addEventListener("DOMContentLoaded", () => {
@@ -309,10 +386,21 @@
         }
         document.getElementById("taskDate").value = new Date().toISOString().split("T")[0];
         applyTheme();
+        applyTranslations();
         initializeEventListeners();
         requestNotificationPermission();
         loadTasks();
         checkDueDates();
+    });
+
+    // Theme and Language Toggle
+    document.getElementById("themeToggleBtn").addEventListener("click", () => {
+        toggleTheme();
+        applyTranslations();
+    });
+
+    document.getElementById("languageToggle").addEventListener("change", () => {
+        applyTranslations();
     });
 
     /**
@@ -361,6 +449,10 @@
      */
     function saveTasks() {
         try {
+            if (state.tasks.length > 1000) {
+                state.tasks = state.tasks.slice(-1000);
+                console.warn("Tasks exceeded 1000; older tasks have been removed.");
+            }
             checkStorageCapacity();
             localStorage.setItem("tasks", minifyJSON(state.tasks));
         } catch (e) {
@@ -375,6 +467,9 @@
      */
     function saveState() {
         state.history.push(minifyJSON(state.tasks));
+        if (state.history.length > 50) {
+            state.history.shift();
+        }
         state.redoStack = [];
     }
 
@@ -459,26 +554,26 @@
                 const taskInfo = document.createElement("div");
                 taskInfo.className = "d-flex justify-content-between align-items-center";
                 const taskText = document.createElement("span");
-                taskText.textContent = `${task.text} - ${task.date || "No due date"} (${task.category}, ${task.priority}, ${task.recurrence})`;
+                taskText.textContent = `${task.text} - ${task.date || getTranslation("noDueDate")} (${getTranslation(task.category.toLowerCase()) || task.category}, ${getTranslation(task.priority.toLowerCase()) || task.priority}, ${getTranslation(task.recurrence.toLowerCase()) || task.recurrence})`;
                 taskInfo.appendChild(taskText);
 
                 const buttonGroup = document.createElement("div");
                 const completeBtn = document.createElement("button");
                 completeBtn.className = "btn btn-success btn-sm me-2";
                 completeBtn.textContent = "✔";
-                completeBtn.setAttribute("aria-label", "Mark completed");
+                completeBtn.setAttribute("aria-label", getTranslation("markCompleted"));
                 completeBtn.onclick = () => markCompleted(index);
 
                 const editBtn = document.createElement("button");
                 editBtn.className = "btn btn-warning btn-sm me-2";
                 editBtn.textContent = "✏";
-                editBtn.setAttribute("aria-label", "Edit task");
+                editBtn.setAttribute("aria-label", getTranslation("editTask"));
                 editBtn.onclick = () => editTask(index);
 
                 const deleteBtn = document.createElement("button");
                 deleteBtn.className = "btn btn-danger btn-sm";
                 deleteBtn.textContent = "🗑";
-                deleteBtn.setAttribute("aria-label", "Delete task");
+                deleteBtn.setAttribute("aria-label", getTranslation("deleteTask"));
                 deleteBtn.onclick = () => deleteTask(index);
 
                 buttonGroup.append(completeBtn, editBtn, deleteBtn);
@@ -490,7 +585,7 @@
                     notesSection.className = "mt-2";
                     const notesToggle = document.createElement("button");
                     notesToggle.className = "btn btn-link btn-sm";
-                    notesToggle.textContent = "Show Notes";
+                    notesToggle.textContent = getTranslation("showNotes");
                     notesToggle.setAttribute("data-bs-toggle", "collapse");
                     notesToggle.setAttribute("data-bs-target", `#notes-${index}`);
                     const notesContent = document.createElement("div");
@@ -615,7 +710,7 @@
      * Deletes all tasks after confirmation.
      */
     function deleteAllTasks() {
-        if (confirm("Are you sure you want to delete all tasks?")) {
+        if (confirm(getTranslation("confirmDeleteAll"))) {
             try {
                 saveState();
                 state.tasks = [];
@@ -643,7 +738,7 @@
                 alert("Failed to undo. Please try again.");
             }
         } else {
-            alert("No actions to undo.");
+            alert(getTranslation("noUndo"));
         }
     }
 
@@ -662,7 +757,7 @@
                 alert("Failed to redo. Please try again.");
             }
         } else {
-            alert("No actions to redo.");
+            alert(getTranslation("noRedo"));
         }
     }
 
@@ -719,16 +814,16 @@
      */
     function exportToExcel() {
         if (state.tasks.length === 0) {
-            alert("No tasks to export.");
+            alert(getTranslation("noTasksToExport"));
             return;
         }
         try {
-            const worksheet = XLSX.utility.json_to_sheet(state.tasks.map(task => ({
+            const worksheet = XLSX.utils.json_to_sheet(state.tasks.map(task => ({
                 ...task,
-                notes: task.notes || "None"
+                notes: task.notes || getTranslation("none")
             })));
-            const workbook = XLSX.utility.book_new();
-            XLSX.utility.book_append_sheet(workbook, worksheet, "Todo List");
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Todo List");
             XLSX.writeFile(workbook, "Todo_List.xlsx");
         } catch (e) {
             console.error("Export failed:", e);
@@ -741,7 +836,7 @@
      */
     function openEmailModal() {
         if (state.tasks.length === 0) {
-            alert("No tasks to send.");
+            alert(getTranslation("noTasksToSend"));
             return;
         }
         document.getElementById("emailInput").value = "";
@@ -761,7 +856,7 @@
             return;
         }
         const taskListText = state.tasks.map(task =>
-            `${task.text} - ${task.date || "No due date"} (${task.category}, ${task.priority}, ${task.recurrence}, ${task.completed ? "Completed" : "Pending"})\nNotes: ${task.notes || "None"}`
+            `${task.text} - ${task.date || getTranslation("noDueDate")} (${getTranslation(task.category.toLowerCase()) || task.category}, ${getTranslation(task.priority.toLowerCase()) || task.priority}, ${getTranslation(task.recurrence.toLowerCase()) || task.recurrence}, ${task.completed ? getTranslation("completed") : getTranslation("pending")})\n${getTranslation("notes")}: ${task.notes || getTranslation("none")}`
         ).join("\n\n");
         window.location.href = `mailto:${email}?subject=Todo List&body=${encodeURIComponent(taskListText)}`;
         bootstrap.Modal.getInstance(document.getElementById("emailModal")).hide();
@@ -775,12 +870,12 @@
         state.tasks.forEach((task, index) => {
             if (!task.completed && task.date === today) {
                 if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification('Task Due Today', {
-                        body: `Reminder: Task "${task.text}" is due today!`,
+                    new Notification(getTranslation("taskDueToday"), {
+                        body: `${getTranslation("reminder")}: ${task.text} ${getTranslation("isDueToday")}!`,
                         icon: 'https://via.placeholder.com/32'
                     });
                 } else {
-                    alert(`Reminder: Task "${task.text}" is due today!`);
+                    alert(`${getTranslation("reminder")}: ${task.text} ${getTranslation("isDueToday")}!`);
                 }
             }
             if (task.date && task.recurrence !== "none" && new Date(task.date) < new Date(today)) {
@@ -895,7 +990,7 @@
                 state.redoStack = [];
                 saveTasks();
                 loadTasks();
-                alert(`Data restored successfully! ${sanitizedRestoredTasks.length} tasks processed, ${mergedTasks.length - state.tasks.length} new tasks added.`);
+                alert(`${getTranslation("dataRestored")} ${sanitizedRestoredTasks.length} ${getTranslation("tasksProcessed")}, ${mergedTasks.length - state.tasks.length} ${getTranslation("newTasksAdded")}.`);
             } catch (e) {
                 console.error("Failed to restore data:", e);
                 alert("Failed to restore data. Please ensure the file is a valid Todo List backup.");
