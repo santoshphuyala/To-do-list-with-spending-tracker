@@ -162,45 +162,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="utils.js"></script>
     <script>
-        // Translation dictionary for index.html
-        const translations = {
-            en: {
-                toggleDarkMode: "Toggle Dark Mode",
-                toggleLightMode: "Toggle Light Mode",
-                english: "English",
-                nepali: "Nepali",
-                todoList: "Todo List",
-                spendingTracker: "Spending Tracker"
-            },
-            ne: {
-                toggleDarkMode: "डार्क मोड टगल गर्नुहोस्",
-                toggleLightMode: "लाइट मोड टगल गर्नुहोस्",
-                english: "अंग्रेजी",
-                nepali: "नेपाली",
-                todoList: "टुडु लिस्ट",
-                spendingTracker: "खर्च ट्र्याकर"
-            }
-        };
-
-        function getTranslation(key) {
-            const lang = document.getElementById("languageToggle").value;
-            return translations[lang][key] || key;
-        }
-
-        function applyTranslations() {
-            document.querySelectorAll("[data-translate]").forEach(elem => {
-                const key = elem.getAttribute("data-translate");
-                elem.textContent = getTranslation(key);
-            });
-            updateThemeButtonText();
-        }
-
-        function updateThemeButtonText() {
-            const toggleThemeBtn = document.getElementById('toggleThemeBtn');
-            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-            toggleThemeBtn.textContent = currentTheme === 'dark' ? getTranslation('toggleLightMode') : getTranslation('toggleDarkMode');
-        }
-
         (function () {
             const todoIframe = document.getElementById('todoIframe');
             const spendingIframe = document.getElementById('spendingIframe');
@@ -210,12 +171,11 @@
             function initializeApp() {
                 // Load saved theme using applyTheme from utils.js
                 applyTheme();
-                updateThemeButtonText();
+                applyTranslations();
 
                 // Load saved language
                 const savedLanguage = localStorage.getItem('selectedLanguage') || 'en';
                 languageToggle.value = savedLanguage;
-                applyTranslations();
 
                 // Wait for iframes to load before sending messages
                 todoIframe.onload = () => {
@@ -248,7 +208,7 @@
 
             toggleThemeBtn.addEventListener('click', () => {
                 toggleTheme();
-                updateThemeButtonText();
+                applyTranslations(); // Updates the toggle button text
                 propagateTheme(document.documentElement.getAttribute('data-theme'));
             });
 
