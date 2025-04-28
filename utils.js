@@ -1,20 +1,3 @@
-/**
- * Utility functions shared across To-Do List and Spending Tracker.
- */
-
-// Theme Management
-function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute("data-theme");
-    const newTheme = currentTheme === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", newTheme);
-    localStorage.setItem("theme", newTheme);
-}
-
-function applyTheme() {
-    const savedTheme = localStorage.getItem("theme") || "light";
-    document.documentElement.setAttribute("data-theme", savedTheme);
-}
-
 // Localization
 const translations = {
     "en": {
@@ -41,6 +24,40 @@ const translations = {
         "noTasks": "No tasks found.",
         "completed": "Completed",
         "actions": "Actions",
+        "noDueDate": "No due date",
+        "showNotes": "Show Notes",
+        "taskDueToday": "Task Due Today",
+        "taskDueReminder": "Reminder: Task \"{task}\" is due today!",
+        "notes": "Notes",
+        "sendEmail": "Send Email",
+        "emailPlaceholder": "Enter recipient email",
+        "emailInvalid": "Please enter a valid email address",
+        "deleteAllConfirm": "Are you sure you want to delete all tasks?",
+        "noTasksToExport": "No tasks to export.",
+        "noTasksToSend": "No tasks to send.",
+        "undo": "Undo",
+        "redo": "Redo",
+        "noUndo": "No actions to undo.",
+        "noRedo": "No actions to redo.",
+        "backup": "Backup",
+        "restore": "Restore",
+        "loadTasksError": "Unable to load tasks: {error}",
+        "saveTasksError": "Unable to save tasks: {error}",
+        "addTaskError": "Failed to add task: {error}",
+        "markCompletedError": "Failed to mark task completed: {error}",
+        "deleteTaskError": "Failed to delete task: {error}",
+        "markAllCompletedError": "Failed to mark all tasks completed: {error}",
+        "deleteAllTasksError": "Failed to delete all tasks: {error}",
+        "undoError": "Failed to undo: {error}",
+        "redoError": "Failed to redo: {error}",
+        "sortTasksError": "Failed to sort tasks: {error}",
+        "exportExcelError": "Failed to export to Excel: {error}",
+        "backupError": "Failed to backup data: {error}",
+        "restoreError": "Failed to restore data: {error}",
+        "invalidBackupFormat": "Invalid backup format: must be an array.",
+        "noValidTasks": "No valid tasks found in backup.",
+        "restoreSuccess": "Data restored successfully! {processed} tasks processed, {added} new tasks added.",
+        "readFileError": "Failed to read file: {error}",
         // Spending Tracker
         "spendingTracker": "Spending Tracker",
         "addEntry": "Add Entry",
@@ -148,6 +165,40 @@ const translations = {
         "noTasks": "कुनै कार्यहरू फेला परेन।",
         "completed": "पुरा भएको",
         "actions": "कार्यहरू",
+        "noDueDate": "कुनै अन्तिम मिति छैन",
+        "showNotes": "नोटहरू देखाउनुहोस्",
+        "taskDueToday": "आजको कार्य बाँकी",
+        "taskDueReminder": "रिमाइन्डर: कार्य \"{task}\" आज बाँकी छ!",
+        "notes": "नोटहरू",
+        "sendEmail": "इमेल पठाउनुहोस्",
+        "emailPlaceholder": "प्रापकको इमेल प्रविष्ट गर्नुहोस्",
+        "emailInvalid": "कृपया मान्य इमेल ठेगाना प्रविष्ट गर्नुहोस्",
+        "deleteAllConfirm": "के तपाईं सबै कार्यहरू हटाउन निश्चित हुनुहुन्छ?",
+        "noTasksToExport": "निर्यात गर्न कुनै कार्यहरू छैनन्।",
+        "noTasksToSend": "पठाउन कुनै कार्यहरू छैनन्।",
+        "undo": "रद्द गर्नुहोस्",
+        "redo": "पुनः गर्नुहोस्",
+        "noUndo": "रद्द गर्न कुनै कार्यहरू छैनन्।",
+        "noRedo": "पुनः गर्न कुनै कार्यहरू छैनन्।",
+        "backup": "ब्याकअप",
+        "restore": "पुनर्स्थापना",
+        "loadTasksError": "कार्यहरू लोड गर्न असमर्थ: {error}",
+        "saveTasksError": "कार्यहरू बचत गर्न असमर्थ: {error}",
+        "addTaskError": "कार्य थप्न असफल: {error}",
+        "markCompletedError": "कार्य पूरा भएको चिन्ह लगाउन असफल: {error}",
+        "deleteTaskError": "कार्य हटाउन असफल: {error}",
+        "markAllCompletedError": "सबै कार्यहरू पूरा भएको चिन्ह लगाउन असफल: {error}",
+        "deleteAllTasksError": "सबै कार्यहरू हटाउन असफल: {error}",
+        "undoError": "रद्द गर्न असफल: {error}",
+        "redoError": "पुनः गर्न असफल: {error}",
+        "sortTasksError": "कार्यहरू क्रमबद्ध गर्न असफल: {error}",
+        "exportExcelError": "एक्सेलमा निर्यात गर्न असफल: {error}",
+        "backupError": "डाटा ब्याकअप गर्न असफल: {error}",
+        "restoreError": "डाटा पुनर्स्थापना गर्न असफल: {error}",
+        "invalidBackupFormat": "अमान्य ब्याकअप ढाँचा: यो एक एर्रे हुनुपर्छ।",
+        "noValidTasks": "ब्याकअपमा कुनै मान्य कार्यहरू फेला परेन।",
+        "restoreSuccess": "डाटा सफलतापूर्वक पुनर्स्थापना गरियो! {processed} कार्यहरू प्रशोधन गरियो, {added} नयाँ कार्यहरू थपियो।",
+        "readFileError": "फाइल पढ्न असफल: {error}",
         "spendingTracker": "खर्च ट्र्याकर",
         "addEntry": "प्रविष्टि थप्नुहोस्",
         "addSpendingEntryHeader": "खर्च प्रविष्टि थप्नुहोस्",
@@ -228,65 +279,3 @@ const translations = {
         "deleteCategoryConfirm": "के तपाईं यो वस्तु हटाउन निश्चित हुनुहुन्छ?"
     }
 };
-
-function getTranslation(key, replacements = {}) {
-    const lang = localStorage.getItem("selectedLanguage") || "en";
-    let translation = translations[lang][key] || translations["en"][key] || key;
-    Object.keys(replacements).forEach(k => {
-        translation = translation.replace(`{${k}}`, replacements[k]);
-    });
-    return translation;
-}
-
-function applyTranslations() {
-    document.querySelectorAll("[data-translate]").forEach(element => {
-        const key = element.getAttribute("data-translate");
-        element.textContent = getTranslation(key);
-    });
-    document.querySelectorAll("[data-translate-placeholder]").forEach(element => {
-        const key = element.getAttribute("data-translate-placeholder");
-        element.setAttribute("placeholder", getTranslation(key));
-    });
-    document.querySelectorAll("select option[data-translate]").forEach(option => {
-        const key = option.getAttribute("data-translate");
-        option.textContent = getTranslation(key);
-    });
-}
-
-// Storage Utilities
-function minifyJSON(data) {
-    return JSON.stringify(data);
-}
-
-function parseMinifiedJSON(data) {
-    return JSON.parse(data);
-}
-
-function checkStorageCapacity() {
-    const testKey = "__test__";
-    let testData = "";
-    try {
-        while (true) {
-            testData += "a".repeat(1024);
-            localStorage.setItem(testKey, testData);
-        }
-    } catch (e) {
-        const usedSpace = (JSON.stringify(localStorage).length / 1024).toFixed(2);
-        const totalSpace = (usedSpace + (testData.length / 1024)).toFixed(2);
-        console.log(`Storage: ${usedSpace} KB used out of ~${totalSpace} KB available.`);
-        localStorage.removeItem(testKey);
-        if (e.name === "QuotaExceededError") {
-            alert("Storage limit reached! Please clear some data to continue.");
-            throw new Error("Storage limit exceeded.");
-        }
-    }
-}
-
-// Debouncing
-function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-}
